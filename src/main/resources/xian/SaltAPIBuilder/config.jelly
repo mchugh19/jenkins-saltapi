@@ -1,0 +1,53 @@
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+  <!--
+    This jelly script is used for per-project configuration.
+
+    See global.jelly for a general discussion about jelly script.
+  -->
+
+  <f:entry title="Server Name" field="servername">
+    <f:textbox />
+  </f:entry>
+
+  <f:entry title="User Name" field="username">
+    <f:textbox />
+  </f:entry>
+
+  <f:entry title="User Password" field="userpass">
+    <f:password />
+  </f:entry>
+
+  <f:entry title="Auth Type" field="authtype">
+    <select name="authtype">
+      <option value="pam">pam</option>
+    </select>
+  </f:entry>
+
+  <f:entry title="Target" field="target">
+    <f:textbox />
+  </f:entry>
+
+  <f:entry title="Target Type" field="targettype">
+    <select name="targettype">
+      <option value="glob">glob</option>
+      <option value="pcre">pcre</option>
+      <option value="list">list</option>
+      <option value="grain">grain</option>
+      <option value="pillar">pillar</option>
+      <option value="nodegroup">nodegroup</option>
+      <option value="range">range</option>
+      <option value="compound">compund</option>
+    </select>
+  </f:entry>
+
+  <f:entry title="Function" field="function">
+    <select name="function">
+      <option value="cmd.run">cmd.run</option>
+    </select>
+  </f:entry>
+
+  <f:entry title="Arguments" field="arguments">
+    <f:textbox />
+  </f:entry>
+
+</j:jelly>
