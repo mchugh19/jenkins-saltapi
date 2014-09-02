@@ -135,7 +135,7 @@ public class SaltAPIBuilder extends Builder {
         return target;
     }
     public String getTargettype() {
-        return targettype;
+        return this.targettype;
     }
     public String getFunction() {
         return function;
@@ -181,13 +181,21 @@ public class SaltAPIBuilder extends Builder {
 
         //If we got this far, auth must have been pretty good
         //listener.getLogger().println("Sending auth to "+servername+": "+token);
-        String saltFunc = "client=local&tgt="+target+"&expr_form="+targettype+"&fun="+function+"&arg="+arguments;
+        String saltFunc = new String();
+        if (arguments.length() > 0){ 
+          saltFunc = "client=local&tgt="+target+"&expr_form="+targettype+"&fun="+function+"&arg="+arguments;
+        } else {
+          saltFunc = "client=local&tgt="+target+"&expr_form="+targettype+"&fun="+function;
+        }
         httpResponse = sendJSON(servername, saltFunc, token);
-        if (httpResponse.contains("java.io.IOException") || httpResponse.contains("java.net.SocketTimeoutException")) {
-          listener.getLogger().println("Error: "+httpResponse);
+        if (httpResponse.contains("java.io.IOException") || 
+            httpResponse.contains("java.net.SocketTimeoutException") || 
+            httpResponse.contains("Error")  
+           ) {
+          listener.getLogger().println("Error: "+function+" "+arguments+" to "+servername+"for "+target+":\n"+httpResponse);
           return false;
         }
-        listener.getLogger().println("Response for "+function+" "+arguments+" to "+servername+":\n"+httpResponse);
+        listener.getLogger().println("Response on "+function+" "+arguments+" to "+servername+" for "+target+":\n"+httpResponse);
 
         return true;
     }
