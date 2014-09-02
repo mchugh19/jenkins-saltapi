@@ -61,7 +61,7 @@ public class SaltAPIBuilder extends Builder {
         this.arguments = arguments;
     }
 
-    public String sendJSON(String targetURL, String urlParams, String auth) {
+    public static String sendJSON(String targetURL, String urlParams, String auth) {
       HttpURLConnection connection = null;  
       String myauth = new String();
       myauth = auth;
@@ -85,6 +85,7 @@ public class SaltAPIBuilder extends Builder {
         connection.setUseCaches (false);
         connection.setDoInput(true);
         connection.setDoOutput(true);
+        connection.setConnectTimeout(5000); //set timeout to 5 seconds
   
         //Send request
         DataOutputStream wr = new DataOutputStream ( connection.getOutputStream());
@@ -112,31 +113,6 @@ public class SaltAPIBuilder extends Builder {
         if(connection != null) {
           connection.disconnect(); 
         }
-      }
-    }
-
-    public FormValidation doTestConnection(@QueryParameter("servername") final String servername, @QueryParameter("username") final String username, @QueryParameter("userpass") final String userpass, @QueryParameter("authtype") final String authtype) throws IOException, ServletException {
-      try {
-        String auth = "username="+username+"&password="+userpass+"&eauth="+authtype;
-        String httpResponse = new String();
-        httpResponse = sendJSON(servername, auth, null);
-        if (httpResponse.contains("java.io.IOException")) {
-          listener.getLogger().println("Error: "+httpResponse);
-          return FormValidation.error("Client error : "+e.getMessage());
-        }
-        JSONObject authresp = (JSONObject) JSONSerializer.toJSON(httpResponse);
-        JSONArray params = authresp.getJSONArray("return");
-        //print response from salt api
-        //listener.getLogger().println("json params "+params.toString(2));
-        String token = new String();
-        for (Object o : params ) {
-          JSONObject line = (JSONObject) o;
-          token = line.getString("token");
-        }
-        //listener.getLogger().println("token is "+token);
-        return FormValidation.ok("Success");
-      } catch (SaltAuthException e) {
-        return FormValidation.error("Client error : "+e.getMessage());
       }
     }
 
@@ -197,7 +173,7 @@ public class SaltAPIBuilder extends Builder {
           token = line.getString("token");
         }
         //listener.getLogger().println("token is "+token);
-        if (httpResponse.contains("java.io.IOException")) {
+        if (httpResponse.contains("java.io.IOException") || httpResponse.contains("java.net.SocketTimeoutException")) {
           listener.getLogger().println("Error: "+httpResponse);
           return false;
         }
@@ -207,7 +183,7 @@ public class SaltAPIBuilder extends Builder {
         //listener.getLogger().println("Sending auth to "+servername+": "+token);
         String saltFunc = "client=local&tgt="+target+"&expr_form="+targettype+"&fun="+function+"&arg="+arguments;
         httpResponse = sendJSON(servername, saltFunc, token);
-        if (httpResponse.contains("java.io.IOException")) {
+        if (httpResponse.contains("java.io.IOException") || httpResponse.contains("java.net.SocketTimeoutException")) {
           listener.getLogger().println("Error: "+httpResponse);
           return false;
         }
@@ -237,6 +213,36 @@ public class SaltAPIBuilder extends Builder {
          * <p>
          * If you don't want fields to be persisted, use <tt>transient</tt>.
          */
+
+         public FormValidation doTestConnection(@QueryParameter("servername") final String servername, 
+					   @QueryParameter("username") final String username, 
+					   @QueryParameter("userpass") final String userpass, 
+					   @QueryParameter("authtype") final String authtype) 
+					   throws IOException, ServletException {
+           String httpResponse = new String();
+           String auth = "username="+username+"&password="+userpass+"&eauth="+authtype;
+           try {
+             httpResponse = sendJSON(servername, auth, null);
+             if (httpResponse.contains("java.io.IOException") ) {
+               return FormValidation.error("Connection error: "+httpResponse);
+             } else if ( httpResponse.contains("java.net.SocketTimeoutException")) {
+               return FormValidation.error("Connection error: "+servername+" timed out");
+             }
+             JSONObject authresp = (JSONObject) JSONSerializer.toJSON(httpResponse);
+             JSONArray params = authresp.getJSONArray("return");
+             //print response from salt api
+             String token = new String();
+             for (Object o : params ) {
+               JSONObject line = (JSONObject) o;
+               token = line.getString("token");
+             }
+             return FormValidation.ok("Success");
+           } catch (Exception e) {
+             return FormValidation.error("Client error : "+e.getMessage()+" "+httpResponse);
+           }
+         }
+
+
 
         /**
          * Performs on-the-fly validation of the form field 'name'.
