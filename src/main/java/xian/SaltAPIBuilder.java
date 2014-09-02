@@ -119,22 +119,22 @@ public class SaltAPIBuilder extends Builder {
     /*
      * We'll use this from the <tt>config.jelly</tt>.
      */
-    public String getServerName() {
+    public String getServername() {
         return servername;
     }
-    public String getUserName() {
+    public String getUsername() {
         return username;
     }
-    public String getUserPass() {
+    public String getUserpass() {
         return userpass;
     }
-    public String getAuthType() {
+    public String getAuthtype() {
         return authtype;
     }
     public String getTarget() {
         return target;
     }
-    public String getTargetType() {
+    public String getTargettype() {
         return targettype;
     }
     public String getFunction() {
