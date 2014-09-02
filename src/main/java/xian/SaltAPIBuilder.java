@@ -115,6 +115,31 @@ public class SaltAPIBuilder extends Builder {
       }
     }
 
+    public FormValidation doTestConnection(@QueryParameter("servername") final String servername, @QueryParameter("username") final String username, @QueryParameter("userpass") final String userpass, @QueryParameter("authtype") final String authtype) throws IOException, ServletException {
+      try {
+        String auth = "username="+username+"&password="+userpass+"&eauth="+authtype;
+        String httpResponse = new String();
+        httpResponse = sendJSON(servername, auth, null);
+        if (httpResponse.contains("java.io.IOException")) {
+          listener.getLogger().println("Error: "+httpResponse);
+          return FormValidation.error("Client error : "+e.getMessage());
+        }
+        JSONObject authresp = (JSONObject) JSONSerializer.toJSON(httpResponse);
+        JSONArray params = authresp.getJSONArray("return");
+        //print response from salt api
+        //listener.getLogger().println("json params "+params.toString(2));
+        String token = new String();
+        for (Object o : params ) {
+          JSONObject line = (JSONObject) o;
+          token = line.getString("token");
+        }
+        //listener.getLogger().println("token is "+token);
+        return FormValidation.ok("Success");
+      } catch (SaltAuthException e) {
+        return FormValidation.error("Client error : "+e.getMessage());
+      }
+    }
+
     /*
      * We'll use this from the <tt>config.jelly</tt>.
      */

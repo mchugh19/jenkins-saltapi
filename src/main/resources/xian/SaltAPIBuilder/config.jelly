@@ -8,20 +8,20 @@
   <f:entry title="Server Name" field="servername">
     <f:textbox />
   </f:entry>
-
   <f:entry title="User Name" field="username">
     <f:textbox />
   </f:entry>
-
   <f:entry title="User Password" field="userpass">
     <f:password />
   </f:entry>
-
   <f:entry title="Auth Type" field="authtype">
     <select name="authtype">
       <option value="pam">pam</option>
     </select>
   </f:entry>
+  <f:validateButton
+   title="${%Test Connection}" progress="${%Testing...}"
+   method="testConnection" with="servername,username,userpass,authtype" />
 
   <f:entry title="Target" field="target">
     <f:textbox />
@@ -41,9 +41,7 @@
   </f:entry>
 
   <f:entry title="Function" field="function">
-    <select name="function">
-      <option value="cmd.run">cmd.run</option>
-    </select>
+    <f:textbox default="cmd.run" />
   </f:entry>
 
   <f:entry title="Arguments" field="arguments">
