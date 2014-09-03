@@ -14,6 +14,7 @@ import org.kohsuke.stapler.QueryParameter;
 
 import java.net.*;
 import net.sf.json.JSONArray;
+import net.sf.json.util.JSONUtils;
 import net.sf.json.JSONSerializer;
 
 import java.io.*;
@@ -190,12 +191,24 @@ public class SaltAPIBuilder extends Builder {
         httpResponse = sendJSON(servername, saltFunc, token);
         if (httpResponse.contains("java.io.IOException") || 
             httpResponse.contains("java.net.SocketTimeoutException") || 
-            httpResponse.contains("Error")  
+            httpResponse.contains("TypeError")  
            ) {
-          listener.getLogger().println("Error: "+function+" "+arguments+" to "+servername+"for "+target+":\n"+httpResponse);
+          listener.getLogger().println("Error: "+function+" "+arguments+" to "+servername+" for "+target+":\n"+httpResponse);
           return false;
         }
-        listener.getLogger().println("Response on "+function+" "+arguments+" to "+servername+" for "+target+":\n"+httpResponse);
+        try {
+          JSONObject jsonResp = (JSONObject) JSONSerializer.toJSON(httpResponse);
+          JSONArray jsonRespArray = jsonResp.getJSONArray("return");
+          for (Object o : jsonRespArray ) {
+            JSONObject line = (JSONObject) o;
+            //pretty print each line in array
+            listener.getLogger().println("Response on "+function+" "+arguments+" to "+servername+" for "+target+":\n"+line.toString(2));
+          }
+          //String jsonTxt = JSONUtils.valueToString(jsonRespArray, 8, 4);
+        } catch (Exception e) {
+          listener.getLogger().println("Problem: "+function+" "+arguments+" to "+servername+" for "+target+":\n"+e+"\n\n"+httpResponse);
+          return false;
+        }
 
         return true;
     }
@@ -260,12 +273,52 @@ public class SaltAPIBuilder extends Builder {
          * @return
          *      Indicates the outcome of the validation. This is sent to the browser.
          */
-        public FormValidation doCheckName(@QueryParameter String value)
+        public FormValidation doCheckServername(@QueryParameter String value)
                 throws IOException, ServletException {
             if (value.length() == 0)
-                return FormValidation.error("Please set a name");
-            if (value.length() < 4)
+                return FormValidation.error("Please specify a name");
+            if (value.length() < 10)
                 return FormValidation.warning("Isn't the name too short?");
+            if (!value.contains("https://") && !value.contains("http://"))
+                return FormValidation.warning("Missing protocol: Servername should be in the format https://host.domain:8000");
+            if (!value.substring(7).contains(":"))
+                return FormValidation.warning("Missing port: Servername should be in the format https://host.domain:8000");
+            return FormValidation.ok();
+        }
+
+        public FormValidation doCheckUsername(@QueryParameter String value)
+                throws IOException, ServletException {
+            if (value.length() == 0)
+                return FormValidation.error("Please specify a name");
+            if (value.length() < 3)
+                return FormValidation.warning("Isn't the name too short?");
+            return FormValidation.ok();
+        }
+
+        public FormValidation doCheckUserpass(@QueryParameter String value)
+                throws IOException, ServletException {
+            if (value.length() == 0)
+                return FormValidation.error("Please specify a password");
+            if (value.length() < 3)
+                return FormValidation.warning("Isn't it too short?");
+            return FormValidation.ok();
+        }
+
+        public FormValidation doCheckTarget(@QueryParameter String value)
+                throws IOException, ServletException {
+            if (value.length() == 0)
+                return FormValidation.error("Please specify a salt target");
+            if (value.length() < 3)
+                return FormValidation.warning("Isn't it too short?");
+            return FormValidation.ok();
+        }
+
+        public FormValidation doCheckFunction(@QueryParameter String value)
+                throws IOException, ServletException {
+            if (value.length() == 0)
+                return FormValidation.error("Please specify a salt function");
+            if (value.length() < 3)
+                return FormValidation.warning("Isn't it too short?");
             return FormValidation.ok();
         }
 
