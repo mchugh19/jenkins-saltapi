@@ -148,18 +148,6 @@ public class SaltAPIBuilder extends Builder {
     @Override
     public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) {
         // This is where you 'build' the project.
-
-        /*
-        listener.getLogger().println("Salt Server: "+servername);
-        listener.getLogger().println("Salt User: "+username);
-        listener.getLogger().println("Salt User Pass: "+userpass);
-        listener.getLogger().println("Salt Auth: "+authtype);
-        listener.getLogger().println("Salt Target: "+target);
-        listener.getLogger().println("Salt Target Type: "+targettype);
-        listener.getLogger().println("Salt Function: "+function);
-        listener.getLogger().println("Salt Arguments: "+arguments);
-        */
-
         //Setup connection for auth
         String auth = "username="+username+"&password="+userpass+"&eauth="+authtype;
         String httpResponse = new String();
@@ -180,7 +168,7 @@ public class SaltAPIBuilder extends Builder {
         }
 
 
-        //If we got this far, auth must have been pretty good
+        //If we got this far, auth must have been pretty good and we've got a token
         //listener.getLogger().println("Sending auth to "+servername+": "+token);
         String saltFunc = new String();
         if (arguments.length() > 0){ 
@@ -198,13 +186,7 @@ public class SaltAPIBuilder extends Builder {
         }
         try {
           JSONObject jsonResp = (JSONObject) JSONSerializer.toJSON(httpResponse);
-          JSONArray jsonRespArray = jsonResp.getJSONArray("return");
-          for (Object o : jsonRespArray ) {
-            JSONObject line = (JSONObject) o;
-            //pretty print each line in array
-            listener.getLogger().println("Response on "+function+" "+arguments+" to "+servername+" for "+target+":\n"+line.toString(2));
-          }
-          //String jsonTxt = JSONUtils.valueToString(jsonRespArray, 8, 4);
+          listener.getLogger().println("Response on "+function+" "+arguments+" to "+servername+" for "+target+":\n"+jsonResp.toString(2));
         } catch (Exception e) {
           listener.getLogger().println("Problem: "+function+" "+arguments+" to "+servername+" for "+target+":\n"+e+"\n\n"+httpResponse);
           return false;
@@ -266,7 +248,7 @@ public class SaltAPIBuilder extends Builder {
 
 
         /**
-         * Performs on-the-fly validation of the form field 'name'.
+         * Performs on-the-fly validation of the form fields
          *
          * @param value
          *      This parameter receives the value that the user has typed.
@@ -332,17 +314,6 @@ public class SaltAPIBuilder extends Builder {
          */
         public String getDisplayName() {
             return "Send a message to Salt API";
-        }
-
-        @Override
-        public boolean configure(StaplerRequest req, JSONObject formData) throws FormException {
-            // To persist global configuration information,
-            // set that to properties and call save().
-            //useFrench = formData.getBoolean("useFrench");
-            // ^Can also use req.bindJSON(this, formData);
-            //  (easier when there are many fields; need set* methods for this, like setUseFrench)
-            save();
-            return super.configure(req,formData);
         }
     }
 }
