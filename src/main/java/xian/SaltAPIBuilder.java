@@ -43,7 +43,6 @@ import javax.servlet.ServletException;
  */
 public class SaltAPIBuilder extends Builder {
 
-    private final Boolean parambuild;
     private final String servername;
     private final String username;
     private final String userpass;
@@ -55,8 +54,7 @@ public class SaltAPIBuilder extends Builder {
 
     // Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
     @DataBoundConstructor
-    public SaltAPIBuilder(Boolean parambuild, String servername, String username, String userpass, String authtype, String target, String targettype, String function, String arguments) {
-        this.parambuild = parambuild;
+    public SaltAPIBuilder(String servername, String username, String userpass, String authtype, String target, String targettype, String function, String arguments) {
         this.servername = servername;
         this.username = username;
         this.userpass = userpass;
@@ -125,14 +123,19 @@ public class SaltAPIBuilder extends Builder {
 
     //replaces $string with value of env($string). Used in conjunction with parameterized builds
     public String paramorize(AbstractBuild build, BuildListener listener, String paramer) {
-      Pattern pattern = Pattern.compile("\\$\\w+");
+      Pattern pattern = Pattern.compile("\\{\\{\\w+\\}\\}");
       Matcher matcher = pattern.matcher(paramer);
       while (matcher.find()) {
         //listener.getLogger().println("FOUND: "+matcher.group());
         try {
           EnvVars envVars;
           envVars = build.getEnvironment(listener);
-          String replacementVar = envVars.get(matcher.group().substring(1));
+          //remove leading {{
+          String replacementVar = matcher.group().substring(2);
+          //remove trailing }} and lookup matching env variable
+          replacementVar = replacementVar.substring(0, replacementVar.length()-2);
+          //using proper env var name, perform a lookup and save value
+          replacementVar = envVars.get(replacementVar);
           //listener.getLogger().println("Environment: " + replacementVar);
           paramer = paramer.replace(matcher.group(), replacementVar);
           //listener.getLogger().println("Environment: " + envVars);
@@ -150,9 +153,6 @@ public class SaltAPIBuilder extends Builder {
     /*
      * We'll use this from the <tt>config.jelly</tt>.
      */
-    public Boolean getParambuild() {
-        return parambuild;
-    }
     public String getServername() {
         return servername;
     }
@@ -184,13 +184,11 @@ public class SaltAPIBuilder extends Builder {
         String mytarget = target;
         String myfunction = function;
         String myarguments = arguments;
-        if (parambuild) {
-          //listener.getLogger().println("Salt Arguments before: "+myarguments);
-          mytarget = paramorize(build, listener, target);
-          myfunction = paramorize(build, listener, function);
-          myarguments = paramorize(build, listener, arguments);
-          //listener.getLogger().println("Salt Arguments after: "+myarguments);
-        }
+        //listener.getLogger().println("Salt Arguments before: "+myarguments);
+        mytarget = paramorize(build, listener, target);
+        myfunction = paramorize(build, listener, function);
+        myarguments = paramorize(build, listener, arguments);
+        //listener.getLogger().println("Salt Arguments after: "+myarguments);
 
         //Setup connection for auth
         String auth = "username="+username+"&password="+userpass+"&eauth="+authtype;
