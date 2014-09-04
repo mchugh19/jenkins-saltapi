@@ -16,6 +16,9 @@ import java.net.*;
 import net.sf.json.JSONArray;
 import net.sf.json.util.JSONUtils;
 import net.sf.json.JSONSerializer;
+import hudson.EnvVars;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import java.io.*;
 
@@ -40,6 +43,7 @@ import javax.servlet.ServletException;
  */
 public class SaltAPIBuilder extends Builder {
 
+    private final Boolean parambuild;
     private final String servername;
     private final String username;
     private final String userpass;
@@ -51,7 +55,8 @@ public class SaltAPIBuilder extends Builder {
 
     // Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
     @DataBoundConstructor
-    public SaltAPIBuilder(String servername, String username, String userpass, String authtype, String target, String targettype, String function, String arguments) {
+    public SaltAPIBuilder(Boolean parambuild, String servername, String username, String userpass, String authtype, String target, String targettype, String function, String arguments) {
+        this.parambuild = parambuild;
         this.servername = servername;
         this.username = username;
         this.userpass = userpass;
@@ -62,6 +67,7 @@ public class SaltAPIBuilder extends Builder {
         this.arguments = arguments;
     }
 
+    //Thinger to connect to saltmaster over rest interface
     public static String sendJSON(String targetURL, String urlParams, String auth) {
       HttpURLConnection connection = null;  
       String myauth = new String();
@@ -117,9 +123,36 @@ public class SaltAPIBuilder extends Builder {
       }
     }
 
+    //replaces $string with value of env($string). Used in conjunction with parameterized builds
+    public String paramorize(AbstractBuild build, BuildListener listener, String paramer) {
+      Pattern pattern = Pattern.compile("\\$\\w+");
+      Matcher matcher = pattern.matcher(paramer);
+      while (matcher.find()) {
+        //listener.getLogger().println("FOUND: "+matcher.group());
+        try {
+          EnvVars envVars;
+          envVars = build.getEnvironment(listener);
+          String replacementVar = envVars.get(matcher.group().substring(1));
+          //listener.getLogger().println("Environment: " + replacementVar);
+          paramer = paramer.replace(matcher.group(), replacementVar);
+          //listener.getLogger().println("Environment: " + envVars);
+        } catch (IOException e1) {
+          listener.getLogger().println(e1);
+          return "Error: "+e1;
+        } catch (InterruptedException e1) {
+          listener.getLogger().println(e1);
+          return "Error: "+e1;
+        }
+      }
+      return paramer;
+    }
+
     /*
      * We'll use this from the <tt>config.jelly</tt>.
      */
+    public Boolean getParambuild() {
+        return parambuild;
+    }
     public String getServername() {
         return servername;
     }
@@ -148,50 +181,55 @@ public class SaltAPIBuilder extends Builder {
     @Override
     public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) {
         // This is where you 'build' the project.
+        String mytarget = target;
+        String myfunction = function;
+        String myarguments = arguments;
+        if (parambuild) {
+          //listener.getLogger().println("Salt Arguments before: "+myarguments);
+          mytarget = paramorize(build, listener, target);
+          myfunction = paramorize(build, listener, function);
+          myarguments = paramorize(build, listener, arguments);
+          //listener.getLogger().println("Salt Arguments after: "+myarguments);
+        }
+
         //Setup connection for auth
         String auth = "username="+username+"&password="+userpass+"&eauth="+authtype;
         String httpResponse = new String();
         httpResponse = sendJSON(servername, auth, null);
         JSONObject authresp = (JSONObject) JSONSerializer.toJSON(httpResponse);
         JSONArray params = authresp.getJSONArray("return");
-        //print response from salt api
-        //listener.getLogger().println("json params "+params.toString(2));
         String token = new String();
         for (Object o : params ) {
           JSONObject line = (JSONObject) o;
           token = line.getString("token");
         }
-        //listener.getLogger().println("token is "+token);
         if (httpResponse.contains("java.io.IOException") || httpResponse.contains("java.net.SocketTimeoutException")) {
           listener.getLogger().println("Error: "+httpResponse);
           return false;
         }
 
-
         //If we got this far, auth must have been pretty good and we've got a token
-        //listener.getLogger().println("Sending auth to "+servername+": "+token);
         String saltFunc = new String();
-        if (arguments.length() > 0){ 
-          saltFunc = "client=local&tgt="+target+"&expr_form="+targettype+"&fun="+function+"&arg="+arguments;
+        if (myarguments.length() > 0){ 
+          saltFunc = "client=local&tgt="+mytarget+"&expr_form="+targettype+"&fun="+myfunction+"&arg="+myarguments;
         } else {
-          saltFunc = "client=local&tgt="+target+"&expr_form="+targettype+"&fun="+function;
+          saltFunc = "client=local&tgt="+mytarget+"&expr_form="+targettype+"&fun="+myfunction;
         }
         httpResponse = sendJSON(servername, saltFunc, token);
         if (httpResponse.contains("java.io.IOException") || 
             httpResponse.contains("java.net.SocketTimeoutException") || 
             httpResponse.contains("TypeError")  
            ) {
-          listener.getLogger().println("Error: "+function+" "+arguments+" to "+servername+" for "+target+":\n"+httpResponse);
+          listener.getLogger().println("Error: "+myfunction+" "+myarguments+" to "+servername+" for "+mytarget+":\n"+httpResponse);
           return false;
         }
         try {
           JSONObject jsonResp = (JSONObject) JSONSerializer.toJSON(httpResponse);
-          listener.getLogger().println("Response on "+function+" "+arguments+" to "+servername+" for "+target+":\n"+jsonResp.toString(2));
+          listener.getLogger().println("Response on "+myfunction+" "+myarguments+" to "+servername+" for "+mytarget+":\n"+jsonResp.toString(2));
         } catch (Exception e) {
-          listener.getLogger().println("Problem: "+function+" "+arguments+" to "+servername+" for "+target+":\n"+e+"\n\n"+httpResponse);
+          listener.getLogger().println("Problem: "+myfunction+" "+myarguments+" to "+servername+" for "+mytarget+":\n"+e+"\n\n"+httpResponse);
           return false;
         }
-
         return true;
     }
 

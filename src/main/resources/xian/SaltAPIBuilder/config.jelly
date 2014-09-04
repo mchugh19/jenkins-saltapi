@@ -24,10 +24,13 @@
    title="${%Test Connection}" progress="${%Testing...}"
    method="testConnection" with="servername,username,userpass,authtype" />
 
+  <f:entry title="Parameterized Build" field="parambuild"
+    description="Check if $VARNAME should be evaluated as a Parameterized Build variable for Target, Function, and Argument entries">
+    <f:checkbox />
+  </f:entry>
   <f:entry title="Target" field="target">
     <f:textbox />
   </f:entry>
-
   <f:entry title="Target Type" field="targettype">
     <select name="targettype">
       <f:option value="glob" selected="${instance.targettype == 'glob'}">glob</f:option>
@@ -38,8 +41,6 @@
       <f:option value="nodegroup" selected="${instance.targettype == 'nodegroup'}">nodegroup</f:option>
       <f:option value="range" selected="${instance.targettype == 'range'}">range</f:option>
       <f:option value="compound" selected="${instance.targettype == 'compound'}">compound</f:option>
-      <f:option>${instance.targettype}:${it.targettype}</f:option>
-
     </select>
   </f:entry>
 
