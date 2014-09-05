@@ -187,6 +187,7 @@ public class SaltAPIBuilder extends Builder {
         //Setup connection for auth
         String auth = "username="+username+"&password="+userpass+"&eauth="+authtype;
         String httpResponse = new String();
+        String token = new String();
         httpResponse = sendJSON(servername, auth, null);
         if (httpResponse.contains("java.io.IOException") || httpResponse.contains("java.net.SocketTimeoutException")) {
           listener.getLogger().println("Error: "+httpResponse);
@@ -195,13 +196,12 @@ public class SaltAPIBuilder extends Builder {
         try {
           JSONObject authresp = (JSONObject) JSONSerializer.toJSON(httpResponse);
           JSONArray returnArray = authresp.getJSONArray("return");
-          String token = new String();
           for (Object o : returnArray ) {
             JSONObject line = (JSONObject) o;
             token = line.getString("token");
           }
         } catch (Exception e) {
-          listener.getLogger().println("JSON Error: "e+"\n\n"+httpResponse);
+          listener.getLogger().println("JSON Error: "+e+"\n\n"+httpResponse);
           return false;
         }
 
