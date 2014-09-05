@@ -6,7 +6,7 @@
     <version>1.424</version><!-- which version of Jenkins is this plugin built against? -->
   </parent>
 
-  <groupId>xian</groupId>
+  <groupId>com.waytta</groupId>
   <artifactId>saltapi</artifactId>
   <version>1.0</version>
   <packaging>hpi</packaging>

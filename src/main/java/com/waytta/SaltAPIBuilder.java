@@ -1,4 +1,4 @@
-package xian;
+package com.waytta;
 import hudson.Launcher;
 import hudson.Extension;
 import hudson.util.FormValidation;
@@ -68,29 +68,25 @@ public class SaltAPIBuilder extends Builder {
     //Thinger to connect to saltmaster over rest interface
     public static String sendJSON(String targetURL, String urlParams, String auth) {
       HttpURLConnection connection = null;  
-      String myauth = new String();
-      myauth = auth;
-      String myurl = new String();
-      if (myauth != null && !myauth.isEmpty()){
-        myurl = targetURL;
+      String serverUrl = new String();
+      if (auth != null && !auth.isEmpty()){
+        serverUrl = targetURL;
       } else {
-        myurl = targetURL+"/login";
+        serverUrl = targetURL+"/login";
       }
       try {
         //Create connection
-        URL url = new URL(myurl);
+        URL url = new URL(serverUrl);
         connection = (HttpURLConnection)url.openConnection();
         connection.setRequestMethod("POST");
-        //connection.setRequestProperty("Content-Type", "application/json");
         connection.setRequestProperty("Accept", "application/json");
-        if (myauth != null && !myauth.isEmpty()){
-          connection.setRequestProperty("X-Auth-Token", myauth);
-        }
-			  
         connection.setUseCaches (false);
         connection.setDoInput(true);
         connection.setDoOutput(true);
         connection.setConnectTimeout(5000); //set timeout to 5 seconds
+        if (auth != null && !auth.isEmpty()){
+          connection.setRequestProperty("X-Auth-Token", auth);
+        }
   
         //Send request
         DataOutputStream wr = new DataOutputStream ( connection.getOutputStream());
@@ -132,13 +128,11 @@ public class SaltAPIBuilder extends Builder {
           envVars = build.getEnvironment(listener);
           //remove leading {{
           String replacementVar = matcher.group().substring(2);
-          //remove trailing }} and lookup matching env variable
+          //remove trailing }} 
           replacementVar = replacementVar.substring(0, replacementVar.length()-2);
           //using proper env var name, perform a lookup and save value
           replacementVar = envVars.get(replacementVar);
-          //listener.getLogger().println("Environment: " + replacementVar);
           paramer = paramer.replace(matcher.group(), replacementVar);
-          //listener.getLogger().println("Environment: " + envVars);
         } catch (IOException e1) {
           listener.getLogger().println(e1);
           return "Error: "+e1;
@@ -194,15 +188,20 @@ public class SaltAPIBuilder extends Builder {
         String auth = "username="+username+"&password="+userpass+"&eauth="+authtype;
         String httpResponse = new String();
         httpResponse = sendJSON(servername, auth, null);
-        JSONObject authresp = (JSONObject) JSONSerializer.toJSON(httpResponse);
-        JSONArray params = authresp.getJSONArray("return");
-        String token = new String();
-        for (Object o : params ) {
-          JSONObject line = (JSONObject) o;
-          token = line.getString("token");
-        }
         if (httpResponse.contains("java.io.IOException") || httpResponse.contains("java.net.SocketTimeoutException")) {
           listener.getLogger().println("Error: "+httpResponse);
+          return false;
+        }
+        try {
+          JSONObject authresp = (JSONObject) JSONSerializer.toJSON(httpResponse);
+          JSONArray returnArray = authresp.getJSONArray("return");
+          String token = new String();
+          for (Object o : returnArray ) {
+            JSONObject line = (JSONObject) o;
+            token = line.getString("token");
+          }
+        } catch (Exception e) {
+          listener.getLogger().println("JSON Error: "e+"\n\n"+httpResponse);
           return false;
         }
 
@@ -223,7 +222,8 @@ public class SaltAPIBuilder extends Builder {
         }
         try {
           JSONObject jsonResp = (JSONObject) JSONSerializer.toJSON(httpResponse);
-          listener.getLogger().println("Response on "+myfunction+" "+myarguments+" to "+servername+" for "+mytarget+":\n"+jsonResp.toString(2));
+          //Print out success
+          listener.getLogger().println("Response on "+myfunction+" "+myarguments+" for "+mytarget+":\n"+jsonResp.toString(2));
         } catch (Exception e) {
           listener.getLogger().println("Problem: "+myfunction+" "+myarguments+" to "+servername+" for "+mytarget+":\n"+e+"\n\n"+httpResponse);
           return false;
@@ -245,13 +245,6 @@ public class SaltAPIBuilder extends Builder {
      */
     @Extension // This indicates to Jenkins that this is an implementation of an extension point.
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
-        /**
-         * To persist global configuration information,
-         * simply store it in a field and call save().
-         *
-         * <p>
-         * If you don't want fields to be persisted, use <tt>transient</tt>.
-         */
 
          public FormValidation doTestConnection(@QueryParameter("servername") final String servername, 
 					   @QueryParameter("username") final String username, 
@@ -268,10 +261,10 @@ public class SaltAPIBuilder extends Builder {
                return FormValidation.error("Connection error: "+servername+" timed out");
              }
              JSONObject authresp = (JSONObject) JSONSerializer.toJSON(httpResponse);
-             JSONArray params = authresp.getJSONArray("return");
+             JSONArray returnArray = authresp.getJSONArray("return");
              //print response from salt api
              String token = new String();
-             for (Object o : params ) {
+             for (Object o : returnArray ) {
                JSONObject line = (JSONObject) o;
                token = line.getString("token");
              }
