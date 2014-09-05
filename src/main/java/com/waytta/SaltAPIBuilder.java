@@ -12,14 +12,9 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.QueryParameter;
 
-import java.net.*;
 import net.sf.json.JSONArray;
 import net.sf.json.util.JSONUtils;
 import net.sf.json.JSONSerializer;
-import hudson.EnvVars;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import java.io.*;
 
 import javax.servlet.ServletException;
@@ -65,85 +60,6 @@ public class SaltAPIBuilder extends Builder {
         this.arguments = arguments;
     }
 
-    //Thinger to connect to saltmaster over rest interface
-    public static String sendJSON(String targetURL, String urlParams, String auth) {
-      HttpURLConnection connection = null;  
-      String serverUrl = new String();
-      if (auth != null && !auth.isEmpty()){
-        serverUrl = targetURL;
-      } else {
-        serverUrl = targetURL+"/login";
-      }
-      try {
-        //Create connection
-        URL url = new URL(serverUrl);
-        connection = (HttpURLConnection)url.openConnection();
-        connection.setRequestMethod("POST");
-        connection.setRequestProperty("Accept", "application/json");
-        connection.setUseCaches (false);
-        connection.setDoInput(true);
-        connection.setDoOutput(true);
-        connection.setConnectTimeout(5000); //set timeout to 5 seconds
-        if (auth != null && !auth.isEmpty()){
-          connection.setRequestProperty("X-Auth-Token", auth);
-        }
-  
-        //Send request
-        DataOutputStream wr = new DataOutputStream ( connection.getOutputStream());
-        wr.writeBytes(urlParams);
-        wr.flush ();
-        wr.close ();
-  
-        //Get Response	
-        InputStream is = connection.getInputStream();
-        BufferedReader rd = new BufferedReader(new InputStreamReader(is));
-        String line;
-        StringBuffer response = new StringBuffer(); 
-        while((line = rd.readLine()) != null) {
-          response.append(line);
-          response.append('\r');
-        }
-        rd.close();
-        return response.toString();
-      } catch (Exception e) {
-        StringWriter errors = new StringWriter();
-        e.printStackTrace(new PrintWriter(errors));
-        //return null;
-        return errors.toString();
-      } finally {
-        if(connection != null) {
-          connection.disconnect(); 
-        }
-      }
-    }
-
-    //replaces $string with value of env($string). Used in conjunction with parameterized builds
-    public String paramorize(AbstractBuild build, BuildListener listener, String paramer) {
-      Pattern pattern = Pattern.compile("\\{\\{\\w+\\}\\}");
-      Matcher matcher = pattern.matcher(paramer);
-      while (matcher.find()) {
-        //listener.getLogger().println("FOUND: "+matcher.group());
-        try {
-          EnvVars envVars;
-          envVars = build.getEnvironment(listener);
-          //remove leading {{
-          String replacementVar = matcher.group().substring(2);
-          //remove trailing }} 
-          replacementVar = replacementVar.substring(0, replacementVar.length()-2);
-          //using proper env var name, perform a lookup and save value
-          replacementVar = envVars.get(replacementVar);
-          paramer = paramer.replace(matcher.group(), replacementVar);
-        } catch (IOException e1) {
-          listener.getLogger().println(e1);
-          return "Error: "+e1;
-        } catch (InterruptedException e1) {
-          listener.getLogger().println(e1);
-          return "Error: "+e1;
-        }
-      }
-      return paramer;
-    }
-
     /*
      * We'll use this from the <tt>config.jelly</tt>.
      */
@@ -179,16 +95,16 @@ public class SaltAPIBuilder extends Builder {
         String myfunction = function;
         String myarguments = arguments;
         //listener.getLogger().println("Salt Arguments before: "+myarguments);
-        mytarget = paramorize(build, listener, target);
-        myfunction = paramorize(build, listener, function);
-        myarguments = paramorize(build, listener, arguments);
+        mytarget = Utils.paramorize(build, listener, target);
+        myfunction = Utils.paramorize(build, listener, function);
+        myarguments = Utils.paramorize(build, listener, arguments);
         //listener.getLogger().println("Salt Arguments after: "+myarguments);
 
         //Setup connection for auth
         String auth = "username="+username+"&password="+userpass+"&eauth="+authtype;
         String httpResponse = new String();
         String token = new String();
-        httpResponse = sendJSON(servername, auth, null);
+        httpResponse = Utils.sendJSON(servername, auth, null);
         if (httpResponse.contains("java.io.IOException") || httpResponse.contains("java.net.SocketTimeoutException")) {
           listener.getLogger().println("Error: "+httpResponse);
           return false;
@@ -212,7 +128,7 @@ public class SaltAPIBuilder extends Builder {
         } else {
           saltFunc = "client=local&tgt="+mytarget+"&expr_form="+targettype+"&fun="+myfunction;
         }
-        httpResponse = sendJSON(servername, saltFunc, token);
+        httpResponse = Utils.sendJSON(servername, saltFunc, token);
         if (httpResponse.contains("java.io.IOException") || 
             httpResponse.contains("java.net.SocketTimeoutException") || 
             httpResponse.contains("TypeError")  
@@ -254,7 +170,7 @@ public class SaltAPIBuilder extends Builder {
            String httpResponse = new String();
            String auth = "username="+username+"&password="+userpass+"&eauth="+authtype;
            try {
-             httpResponse = sendJSON(servername, auth, null);
+             httpResponse = Utils.sendJSON(servername, auth, null);
              if (httpResponse.contains("java.io.IOException") ) {
                return FormValidation.error("Connection error: "+httpResponse);
              } else if ( httpResponse.contains("java.net.SocketTimeoutException")) {
