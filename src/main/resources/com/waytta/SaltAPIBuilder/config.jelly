@@ -19,6 +19,11 @@
    title="${%Test Connection}" progress="${%Testing...}"
    method="testConnection" with="servername,username,userpass,authtype" />
 
+  <f:entry title="Wait for completion" field="blockbuild"
+    description="Don't just send Salt command, wait for completion.">
+    <f:checkbox />
+  </f:entry>
+
   <f:entry title="Target" field="target">
     <f:textbox />
   </f:entry>
