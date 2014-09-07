@@ -7,36 +7,40 @@ import hudson.EnvVars;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.io.*;
+import net.sf.json.JSONObject;
+import net.sf.json.JSONArray;
+import net.sf.json.JSONSerializer;
 
 public class Utils {
     //Thinger to connect to saltmaster over rest interface
-    public static String sendJSON(String targetURL, String urlParams, String auth) {
+    public static JSONObject getJSON(String targetURL, String urlParams, String auth) {
 	HttpURLConnection connection = null;  
 	String serverUrl = new String();
-	if (auth != null && !auth.isEmpty()){
-	    serverUrl = targetURL;
-	} else {
-	    serverUrl = targetURL+"/login";
-	}
+	JSONObject responseJSON = new JSONObject();
+
 	try {
 	    //Create connection
-	    URL url = new URL(serverUrl);
+	    URL url = new URL(targetURL);
 	    connection = (HttpURLConnection)url.openConnection();
-	    connection.setRequestMethod("POST");
 	    connection.setRequestProperty("Accept", "application/json");
 	    connection.setUseCaches (false);
-	    connection.setDoInput(true);
-	    connection.setDoOutput(true);
+	    if (urlParams != null && !urlParams.isEmpty()) {
+		//We have stuff to send, so do an HTTP POST not GET
+		connection.setDoOutput(true);
+	    }
 	    connection.setConnectTimeout(5000); //set timeout to 5 seconds
 	    if (auth != null && !auth.isEmpty()){
 		connection.setRequestProperty("X-Auth-Token", auth);
 	    }
 
 	    //Send request
-	    DataOutputStream wr = new DataOutputStream ( connection.getOutputStream());
-	    wr.writeBytes(urlParams);
-	    wr.flush ();
-	    wr.close ();
+	    if (urlParams != null && !urlParams.isEmpty()) {
+		//only necessary if we have stuff to send
+		DataOutputStream wr = new DataOutputStream ( connection.getOutputStream());
+		wr.writeBytes(urlParams);
+		wr.flush ();
+		wr.close ();
+	    } 
 
 	    //Get Response	
 	    InputStream is = connection.getInputStream();
@@ -48,18 +52,47 @@ public class Utils {
 		response.append('\r');
 	    }
 	    rd.close();
-	    return response.toString();
+	    String responseText = response.toString();
+	    if (responseText.contains("java.io.IOException") || responseText.contains("java.net.SocketTimeoutException")) {
+		responseJSON.put("Error", responseText);
+		return responseJSON;
+	    }
+	    try {
+		//Server response should be json so this should work
+		responseJSON = (JSONObject) JSONSerializer.toJSON(responseText);
+		return responseJSON;
+	    } catch (Exception e) {
+		responseJSON.put("Error",e);
+		return responseJSON;
+	    }
 	} catch (Exception e) {
 	    StringWriter errors = new StringWriter();
 	    e.printStackTrace(new PrintWriter(errors));
-	    //return null;
-	    return errors.toString();
+	    responseJSON.put("Error",errors.toString());
+	    return responseJSON;
 	} finally {
 	    if(connection != null) {
 		connection.disconnect(); 
 	    }
 	}
     } 
+
+    public static String getToken(String servername, String auth) {
+	String token = new String();
+	JSONObject httpResponse = getJSON(servername+"/login", auth, null);
+	try {
+	    JSONArray returnArray = httpResponse.getJSONArray("return");
+	    for (Object o : returnArray ) {
+		JSONObject line = (JSONObject) o;
+		//This token will be used for all subsequent connections
+		token = line.getString("token");
+	    }
+	} catch (Exception e) {
+	    token = "Auth Error: "+e+"\n\n"+httpResponse.toString(2).split("\\\\n")[0];
+	    return token;
+	}
+	return token;
+    }
 
     //replaces $string with value of env($string). Used in conjunction with parameterized builds
     public static String paramorize(AbstractBuild build, BuildListener listener, String paramer) {
