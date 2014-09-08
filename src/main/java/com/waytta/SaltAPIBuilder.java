@@ -20,23 +20,9 @@ import java.io.*;
 
 import javax.servlet.ServletException;
 
-/**
- * Sample {@link Builder}.
- *
- * <p>
- * When the user configures the project and enables this builder,
- * {@link DescriptorImpl#newInstance(StaplerRequest)} is invoked
- * and a new {@link SaltAPIBuilder} is created. The created
- * instance is persisted to the project configuration XML by using
- * XStream, so this allows you to use instance fields (like {@link #name})
- * to remember the configuration.
- *
- * <p>
- * When a build is performed, the {@link #perform(AbstractBuild, Launcher, BuildListener)}
- * method will be invoked. 
- *
- * @author Kohsuke Kawaguchi
- */
+
+
+
 public class SaltAPIBuilder extends Builder {
 
     private final String servername;
@@ -277,14 +263,6 @@ public class SaltAPIBuilder extends Builder {
 		}
 
 
-	    /**
-	     * Performs on-the-fly validation of the form fields
-	     *
-	     * @param value
-	     *      This parameter receives the value that the user has typed.
-	     * @return
-	     *      Indicates the outcome of the validation. This is sent to the browser.
-	     */
 	    public FormValidation doCheckServername(@QueryParameter String value)
 		throws IOException, ServletException {
 		    if (value.length() == 0)
