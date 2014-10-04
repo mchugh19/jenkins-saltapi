@@ -107,7 +107,15 @@ public class SaltAPIBuilder extends Builder {
 	    //If we got this far, auth must have been pretty good and we've got a token
 	    String saltFunc = new String();
 	    if (myarguments.length() > 0){ 
-		saltFunc = "client=local&tgt="+mytarget+"&expr_form="+targettype+"&fun="+myfunction+"&arg="+myarguments;
+		String urlArguments = new String();
+		//remove whitespace
+		myarguments = myarguments.replaceAll("\\s+","");
+		String[] argItems = myarguments.split(",");
+		for (String arg : argItems) {
+			urlArguments+="&arg="+arg;
+		}
+		//listener.getLogger().println("url args: " + urlArguments);
+		saltFunc = "client=local&tgt="+mytarget+"&expr_form="+targettype+"&fun="+myfunction+urlArguments;
 	    } else {
 		saltFunc = "client=local&tgt="+mytarget+"&expr_form="+targettype+"&fun="+myfunction;
 	    }
