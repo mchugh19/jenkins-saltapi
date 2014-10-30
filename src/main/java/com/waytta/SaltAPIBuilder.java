@@ -109,7 +109,7 @@ public class SaltAPIBuilder extends Builder {
 	    if (myarguments.length() > 0){ 
 		String urlArguments = new String();
 		//remove whitespace
-		myarguments = myarguments.replaceAll("\\s+","");
+		myarguments = myarguments.replaceAll("\\s*,\\s*",",");
 		String[] argItems = myarguments.split(",");
 		for (String arg : argItems) {
 			urlArguments+="&arg="+arg;
