@@ -7,7 +7,7 @@
   </parent>
 
   <artifactId>saltstack</artifactId>
-  <version>1.3.0</version>
+  <version>1.3.1-SNAPSHOT</version>
   <packaging>hpi</packaging>
   <name>Jenkins SaltStack plugin</name>
   <description>Allows Jenkins to send SaltStack messages</description>
