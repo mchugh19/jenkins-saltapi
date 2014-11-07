@@ -13,7 +13,7 @@ import net.sf.json.JSONSerializer;
 
 public class Utils {
     //Thinger to connect to saltmaster over rest interface
-    public static JSONObject getJSON(String targetURL, String urlParams, String auth) {
+    public static JSONObject getJSON(String targetURL, JSONArray urlParams, String auth) {
 	HttpURLConnection connection = null;  
 	String serverUrl = new String();
 	JSONObject responseJSON = new JSONObject();
@@ -27,6 +27,8 @@ public class Utils {
 	    if (urlParams != null && !urlParams.isEmpty()) {
 		//We have stuff to send, so do an HTTP POST not GET
 		connection.setDoOutput(true);
+		connection.setRequestProperty("Content-Type", "application/json");
+
 	    }
 	    connection.setConnectTimeout(5000); //set timeout to 5 seconds
 	    if (auth != null && !auth.isEmpty()){
@@ -37,7 +39,7 @@ public class Utils {
 	    if (urlParams != null && !urlParams.isEmpty()) {
 		//only necessary if we have stuff to send
 		DataOutputStream wr = new DataOutputStream ( connection.getOutputStream());
-		wr.writeBytes(urlParams);
+		wr.writeBytes(urlParams.toString());
 		wr.flush ();
 		wr.close ();
 	    } 
@@ -77,7 +79,7 @@ public class Utils {
 	}
     } 
 
-    public static String getToken(String servername, String auth) {
+    public static String getToken(String servername, JSONArray auth) {
 	String token = new String();
 	JSONObject httpResponse = getJSON(servername+"/login", auth, null);
 	try {

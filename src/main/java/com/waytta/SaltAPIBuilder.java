@@ -17,6 +17,7 @@ import net.sf.json.JSONArray;
 import net.sf.json.util.JSONUtils;
 import net.sf.json.JSONSerializer;
 import java.io.*;
+import java.util.*;
 
 import javax.servlet.ServletException;
 
@@ -94,30 +95,45 @@ public class SaltAPIBuilder extends Builder {
 
 	    //Setup connection for auth
 	    String token = new String();
-	    String auth = "username="+username+"&password="+userpass+"&eauth="+authtype;
+	    JSONObject auth = new JSONObject();
+	    auth.put("username", username);
+	    auth.put("password", userpass);
+	    auth.put("eauth", authtype);
+	    JSONArray authArray = new JSONArray();
+	    authArray.add(auth);
 	    JSONObject httpResponse = new JSONObject();
 
 	    //Get an auth token
-	    token = Utils.getToken(servername, auth);
+	    token = Utils.getToken(servername, authArray);
 	    if (token.contains("Error")) {
 		listener.getLogger().println(token);
 		return false;
 	    }
 
 	    //If we got this far, auth must have been pretty good and we've got a token
-	    String saltFunc = new String();
+	    JSONArray saltArray = new JSONArray();
+	    JSONObject saltFunc = new JSONObject();
+	    saltFunc.put("client", "local");
+	    saltFunc.put("tgt", mytarget); 
+	    saltFunc.put("expr_form", targettype);
+	    saltFunc.put("fun", myfunction);
 	    if (myarguments.length() > 0){ 
-		String urlArguments = new String();
-		//remove whitespace
+		List saltArguments = new ArrayList();
+		Map kwArgs = new HashMap();
 		myarguments = myarguments.replaceAll("\\s*,\\s*",",");
 		String[] argItems = myarguments.split(",");
 		for (String arg : argItems) {
-			urlArguments+="&arg="+arg;
+		    if (arg.contains("=")) {
+			String[] kwString = arg.split("=");
+			kwArgs.put(kwString[0], kwString[1]);
+		    } else {
+			saltArguments.add(arg);
+		    }
 		}
-		//listener.getLogger().println("url args: " + urlArguments);
-		saltFunc = "client=local&tgt="+mytarget+"&expr_form="+targettype+"&fun="+myfunction+urlArguments;
-	    } else {
-		saltFunc = "client=local&tgt="+mytarget+"&expr_form="+targettype+"&fun="+myfunction;
+		saltFunc.element("arg", saltArguments);
+		saltFunc.element("kwarg", kwArgs);
+		saltArray.add(saltFunc);
+		//listener.getLogger().println("url args: " + saltArray.toString());
 	    }
 
 	    Boolean myBlockBuild = blockbuild;
@@ -130,7 +146,7 @@ public class SaltAPIBuilder extends Builder {
 	    if (myBlockBuild) {
 		String jid = new String();
 		//Send request to /minion url. This will give back a jid which we will need to poll and lookup for completion
-		httpResponse = Utils.getJSON(servername+"/minions", saltFunc, token);
+		httpResponse = Utils.getJSON(servername+"/minions", saltArray, token);
 		try {
 		    JSONArray returnArray = httpResponse.getJSONArray("return");
 		    for (Object o : returnArray ) {
@@ -202,19 +218,30 @@ public class SaltAPIBuilder extends Builder {
 			return false;
 		    }
 		}
+		if (returnArray.get(0).toString().contains("TypeError")) {
+		    listener.getLogger().println("Salt reported an error for "+myfunction+" "+myarguments+" for "+mytarget+":\n"+returnArray.toString(2));
+		    return false;
+		}
 		//Loop is done. We have heard back from everybody. Good work team!
 		listener.getLogger().println("Response on "+myfunction+" "+myarguments+" for "+mytarget+":\n"+returnArray.toString(2));
 	    } else {
 		//Just send a salt request. Don't wait for reply
-		httpResponse = Utils.getJSON(servername, saltFunc, token);
+		httpResponse = Utils.getJSON(servername, saltArray, token);
 		try {
-		    if (httpResponse.getJSONArray("return").isArray()) {
-			//Print out success
-			listener.getLogger().println("Response on "+myfunction+" "+myarguments+" for "+mytarget+":\n"+httpResponse.toString(2));
+		    if (!httpResponse.getJSONArray("return").isArray()) {
+			//Print problem
+			listener.getLogger().println("Problem on "+myfunction+" "+myarguments+" for "+mytarget+":\n"+httpResponse.toString(2));
+			return false;
 		    }
 		} catch (Exception e) {
 		    listener.getLogger().println("Problem with "+myfunction+" "+myarguments+" for "+mytarget+":\n"+e+"\n\n"+httpResponse.toString(2).split("\\\\n")[0]);
 		    return false;
+		}
+		if (httpResponse.toString().contains("TypeError")) {
+		    listener.getLogger().println("Salt reported an error on "+myfunction+" "+myarguments+" for "+mytarget+":\n"+httpResponse.toString(2));
+		    return false;
+		} else {
+		    listener.getLogger().println("Response on "+myfunction+" "+myarguments+" for "+mytarget+":\n"+httpResponse.toString(2));
 		}
 	    }
 	    //No fail condition reached. Must be good.
@@ -261,8 +288,13 @@ public class SaltAPIBuilder extends Builder {
 		    @QueryParameter("authtype") final String authtype) 
 		throws IOException, ServletException {
 		    JSONObject httpResponse = new JSONObject();
-		    String auth = "username="+username+"&password="+userpass+"&eauth="+authtype;
-		    String token = Utils.getToken(servername, auth);
+		    JSONArray authArray = new JSONArray();
+		    JSONObject auth = new JSONObject();
+		    auth.put("username", username);
+		    auth.put("password", userpass);
+		    auth.put("eauth", authtype);
+		    authArray.add(auth);
+		    String token = Utils.getToken(servername, authArray);
 		    if (token.contains("Error")) {
 			return FormValidation.error("Client error : "+token);
 		    } else {
