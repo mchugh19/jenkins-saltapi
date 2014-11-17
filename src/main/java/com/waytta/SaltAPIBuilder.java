@@ -34,11 +34,15 @@ public class SaltAPIBuilder extends Builder {
     private final String targettype;
     private final String function;
     private final String arguments;
+    private final JSONObject clientInterfaces;
+    private final String clientInterface;
     private final Boolean blockbuild;
+    private final Integer jobPollTime;
+    private final String batchSize;
 
     // Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
     @DataBoundConstructor
-	public SaltAPIBuilder(String servername, String username, String userpass, String authtype, String target, String targettype, String function, String arguments, Boolean blockbuild) {
+	public SaltAPIBuilder(String servername, String username, String userpass, String authtype, String target, String targettype, String function, String arguments, JSONObject clientInterfaces, Integer jobPollTime) {
 	    this.servername = servername;
 	    this.username = username;
 	    this.userpass = userpass;
@@ -47,7 +51,25 @@ public class SaltAPIBuilder extends Builder {
 	    this.targettype = targettype;
 	    this.function = function;
 	    this.arguments = arguments;
-	    this.blockbuild = blockbuild;
+	    this.clientInterfaces = clientInterfaces;
+	    if (clientInterfaces.has("clientInterface")) {
+		this.clientInterface = clientInterfaces.get("clientInterface").toString();
+	    } else {
+		this.clientInterface = "local";
+	    } 
+	    if (clientInterface.equals("local")) {
+		this.blockbuild = clientInterfaces.getBoolean("blockbuild");
+		this.jobPollTime = clientInterfaces.getInt("jobPollTime");
+		this.batchSize = "100%";
+	    } else if (clientInterface.equals("local_batch")) {
+		this.batchSize = clientInterfaces.get("batchSize").toString();
+		this.blockbuild = false;
+		this.jobPollTime = 10;
+	    } else {
+		this.batchSize = "100%";
+		this.blockbuild = false;
+		this.jobPollTime = 10;
+            }
 	}
 
     /*
@@ -77,13 +99,23 @@ public class SaltAPIBuilder extends Builder {
     public String getArguments() {
 	return arguments;
     }
+    public String getClientInterface() {
+	return clientInterface;
+    }
     public Boolean getBlockbuild() {
 	return blockbuild;
+    }
+    public String getBatchSize() {
+	return batchSize;
+    }
+    public Integer getJobPollTime() {
+	return jobPollTime;
     }
 
     @Override
 	public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) {
 	    // This is where you 'build' the project.
+	    String myClientInterface = clientInterface;
 	    String mytarget = target;
 	    String myfunction = function;
 	    String myarguments = arguments;
@@ -113,7 +145,16 @@ public class SaltAPIBuilder extends Builder {
 	    //If we got this far, auth must have been pretty good and we've got a token
 	    JSONArray saltArray = new JSONArray();
 	    JSONObject saltFunc = new JSONObject();
-	    saltFunc.put("client", "local");
+	    // Hardcode clientInterface if not yet set. Once constructor runs, this will not be necessary
+	    if (myClientInterface == null) {
+		myClientInterface = "local";
+	    }
+
+	    saltFunc.put("client", myClientInterface);
+	    if (myClientInterface.equals("local_batch")) {
+		saltFunc.put("batch", batchSize);
+		listener.getLogger().println("Running in batch mode. Batch size: "+batchSize);
+	    }
 	    saltFunc.put("tgt", mytarget); 
 	    saltFunc.put("expr_form", targettype);
 	    saltFunc.put("fun", myfunction);
@@ -133,7 +174,6 @@ public class SaltAPIBuilder extends Builder {
 		saltFunc.element("arg", saltArguments);
 		saltFunc.element("kwarg", kwArgs);
 		saltArray.add(saltFunc);
-		//listener.getLogger().println("url args: " + saltArray.toString());
 	    }
 
 	    Boolean myBlockBuild = blockbuild;
@@ -188,21 +228,22 @@ public class SaltAPIBuilder extends Builder {
 		    return false;
 		}
 
-		//Figure out how often we should poll from configuration screen
-		int waitTime = getDescriptor().getPollTime();
-		if (waitTime < 3) {
-		    //Set a sane default on first install
-		    waitTime = 10;
+		// If not not configured, grab the default
+		int myJobPollTime = 10;
+		if (jobPollTime == null) {
+		    myJobPollTime = getDescriptor().getPollTime();
+		} else {
+		    myJobPollTime = jobPollTime;
 		}
 
 		//Now that we know how many minions have responded, and how many we are waiting on. Let's see more have finished
 		if (numMinionsDone < numMinions) {
 		    //Don't print annying messages unless we really are waiting for more minions to return
-		    listener.getLogger().println("Will check status every "+String.valueOf(waitTime)+" seconds...");
+		    listener.getLogger().println("Will check status every "+String.valueOf(myJobPollTime)+" seconds...");
 		}
 		while (numMinionsDone < numMinions) {
 		    try {
-			Thread.sleep(waitTime*1000);
+			Thread.sleep(myJobPollTime*1000);
 		    } catch (InterruptedException ex) {
 			Thread.currentThread().interrupt();
 			//Allow user to cancel job in jenkins interface
@@ -213,6 +254,10 @@ public class SaltAPIBuilder extends Builder {
 		    try {
 			returnArray = httpResponse.getJSONArray("return");
 			numMinionsDone = returnArray.getJSONObject(0).names().size();
+			if (myClientInterface.equals("local_batch")) {
+			    listener.getLogger().println("Minions finished: " + numMinionsDone);
+			    listener.getLogger().println(returnArray.toString(2));
+			}
 		    } catch (Exception e) {
 			listener.getLogger().println("Problem: "+myfunction+" "+myarguments+" for "+mytarget+":\n"+e+"\n\n"+httpResponse.toString(2).split("\\\\n")[0]);
 			return false;
@@ -259,7 +304,7 @@ public class SaltAPIBuilder extends Builder {
     @Extension // This indicates to Jenkins that this is an implementation of an extension point.
 	public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
 
-	    private int pollTime;
+	    private int pollTime=10;
 
 	    public DescriptorImpl() {
 		load();
@@ -361,6 +406,13 @@ public class SaltAPIBuilder extends Builder {
 		    }
 		    if (Integer.parseInt(value) < 3)
 			return FormValidation.warning("Specify a number larger than 3");
+		    return FormValidation.ok();
+		}
+
+	    public FormValidation doCheckBatchSize(@QueryParameter String value)
+		throws IOException, ServletException {
+		    if (value.length() == 0)
+			return FormValidation.error("Please specify batch size");
 		    return FormValidation.ok();
 		}
 

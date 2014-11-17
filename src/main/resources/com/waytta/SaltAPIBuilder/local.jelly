@@ -1,0 +1,15 @@
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+
+  <f:entry title="Wait for completion" field="blockbuild" description="Don't just send Salt command, wait for completion.">
+    <f:checkbox />
+  </f:entry>
+
+  <f:entry title="Poll Time" description="Number of seconds to wait before polling job completion status on jobs waiting for completion">
+    <f:textbox field="jobPollTime" value="${instance.jobPollTime}" checkUrl="'descriptorByName/SaltAPIBuilder/checkPollTime?value='+escape(this.value)"  default="${descriptor.getPollTime()}" />
+  </f:entry>
+
+  <f:invisibleEntry>
+    <input name="clientInterface" type="hidden" value="local"/>
+  </f:invisibleEntry>
+
+</j:jelly>
