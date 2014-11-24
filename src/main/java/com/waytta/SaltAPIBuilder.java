@@ -162,7 +162,7 @@ public class SaltAPIBuilder extends Builder {
 		List saltArguments = new ArrayList();
 		Map kwArgs = new HashMap();
 		myarguments = myarguments.replaceAll("\\s*,\\s*",",");
-		String[] argItems = myarguments.split(",");
+		String[] argItems = myarguments.split(",(?=([^\"]*\"[^\"]*\")*[^\"]*$)");
 		for (String arg : argItems) {
 		    if (arg.contains("=")) {
 			String[] kwString = arg.split("=");
