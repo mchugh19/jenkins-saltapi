@@ -161,9 +161,13 @@ public class SaltAPIBuilder extends Builder {
 	    if (myarguments.length() > 0){ 
 		List saltArguments = new ArrayList();
 		Map kwArgs = new HashMap();
+		//spit on comma seperated not inside of quotes
 		String[] argItems = myarguments.split(",(?=([^\"]*\"[^\"]*\")*[^\"]*$)");
 		for (String arg : argItems) {
-		    arg = arg.replaceAll("\\s+(?=((\\\\[\\\\\"]|[^\\\\\"])*\"(\\\\[\\\\\"]|[^\\\\\"])*\")*(\\\\[\\\\\"]|[^\\\\\"])*$)", "");
+		    //remove spaces that are not quotes
+		    //arg = arg.replaceAll("\\s+(?=((\\\\[\\\\\"]|[^\\\\\"])*\"(\\\\[\\\\\"]|[^\\\\\"])*\")*(\\\\[\\\\\"]|[^\\\\\"])*$)", "");
+		    //remove spaces at begining or end
+		    arg = arg.replaceAll("^\\s+|\\s+$", "");
 		    arg = arg.replaceAll("\"|\\\"", "");
 		    if (arg.contains("=")) {
 			String[] kwString = arg.split("=");
@@ -176,7 +180,7 @@ public class SaltAPIBuilder extends Builder {
 		saltFunc.element("kwarg", kwArgs);
 		saltArray.add(saltFunc);
 	    }
-	    listener.getLogger().println("Sending JSON: "+saltArray.toString());
+	    //listener.getLogger().println("Sending JSON: "+saltArray.toString());
 
 	    Boolean myBlockBuild = blockbuild;
 	    if (myBlockBuild == null) {
