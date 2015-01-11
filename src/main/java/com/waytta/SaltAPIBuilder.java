@@ -133,6 +133,7 @@ public class SaltAPIBuilder extends Builder {
 	    auth.put("eauth", authtype);
 	    JSONArray authArray = new JSONArray();
 	    authArray.add(auth);
+	    //listener.getLogger().println("Sending auth: "+authArray.toString());
 	    JSONObject httpResponse = new JSONObject();
 
 	    //Get an auth token
@@ -164,8 +165,6 @@ public class SaltAPIBuilder extends Builder {
 		//spit on comma seperated not inside of quotes
 		String[] argItems = myarguments.split(",(?=([^\"]*\"[^\"]*\")*[^\"]*$)");
 		for (String arg : argItems) {
-		    //remove spaces that are not quotes
-		    //arg = arg.replaceAll("\\s+(?=((\\\\[\\\\\"]|[^\\\\\"])*\"(\\\\[\\\\\"]|[^\\\\\"])*\")*(\\\\[\\\\\"]|[^\\\\\"])*$)", "");
 		    //remove spaces at begining or end
 		    arg = arg.replaceAll("^\\s+|\\s+$", "");
 		    arg = arg.replaceAll("\"|\\\"", "");
@@ -178,6 +177,8 @@ public class SaltAPIBuilder extends Builder {
 		}
 		saltFunc.element("arg", saltArguments);
 		saltFunc.element("kwarg", kwArgs);
+		saltArray.add(saltFunc);
+	    } else {
 		saltArray.add(saltFunc);
 	    }
 	    //listener.getLogger().println("Sending JSON: "+saltArray.toString());
