@@ -26,6 +26,9 @@
     <f:dropdownListBlock title="local_batch" value="local_batch" selected="${instance.clientInterface == 'local_batch'}">
       <st:include page="local_batch.jelly" class="com.waytta.SaltAPIBuilder"/>
     </f:dropdownListBlock>
+    <f:dropdownListBlock title="runner" value="runner" selected="${instance.clientInterface == 'runner'}">
+      <st:include page="runner.jelly" class="com.waytta.SaltAPIBuilder"/>
+    </f:dropdownListBlock>
   </f:dropdownList>
 
   <f:entry title="Target" field="target">

@@ -39,10 +39,14 @@ public class SaltAPIBuilder extends Builder {
     private final Boolean blockbuild;
     private final Integer jobPollTime;
     private final String batchSize;
+    private final String mods;
+    private final Boolean usePillar;
+    private final String pillarkey;
+    private final String pillarvalue;
 
     // Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
     @DataBoundConstructor
-	public SaltAPIBuilder(String servername, String username, String userpass, String authtype, String target, String targettype, String function, String arguments, JSONObject clientInterfaces, Integer jobPollTime) {
+	public SaltAPIBuilder(String servername, String username, String userpass, String authtype, String target, String targettype, String function, String arguments, JSONObject clientInterfaces, Integer jobPollTime, String mods, String pillarkey, String pillarvalue) {
 	    this.servername = servername;
 	    this.username = username;
 	    this.userpass = userpass;
@@ -61,14 +65,40 @@ public class SaltAPIBuilder extends Builder {
 		this.blockbuild = clientInterfaces.getBoolean("blockbuild");
 		this.jobPollTime = clientInterfaces.getInt("jobPollTime");
 		this.batchSize = "100%";
+		this.mods = "";
+		this.usePillar = false;
+		this.pillarkey = "";
+		this.pillarvalue = "";
 	    } else if (clientInterface.equals("local_batch")) {
 		this.batchSize = clientInterfaces.get("batchSize").toString();
 		this.blockbuild = false;
 		this.jobPollTime = 10;
+		this.mods = "";
+		this.usePillar = false;
+		this.pillarkey = "";
+		this.pillarvalue = "";
+	    } else if (clientInterface.equals("runner")) {
+		this.mods = clientInterfaces.get("mods").toString();
+		if (clientInterfaces.has("usePillar")) {
+		    this.usePillar = true;
+		    this.pillarkey = clientInterfaces.getJSONObject("usePillar").get("pillarkey").toString();
+		    this.pillarvalue = clientInterfaces.getJSONObject("usePillar").get("pillarvalue").toString();
+		} else {
+		    this.usePillar = false;
+		    this.pillarkey = "";
+		    this.pillarvalue = "";
+		}
+		this.blockbuild = false;
+		this.jobPollTime = 10;
+		this.batchSize = "100%";
 	    } else {
 		this.batchSize = "100%";
 		this.blockbuild = false;
 		this.jobPollTime = 10;
+		this.mods = "";
+		this.usePillar = false;
+		this.pillarkey = "";
+		this.pillarvalue = "";
             }
 	}
 
@@ -110,6 +140,18 @@ public class SaltAPIBuilder extends Builder {
     }
     public Integer getJobPollTime() {
 	return jobPollTime;
+    }
+    public String getMods() {
+	return mods;
+    }
+    public Boolean getUsePillar() {
+	return usePillar;
+    }
+    public String getPillarkey() {
+	return pillarkey;
+    }
+    public String getPillarvalue() {
+	return pillarvalue;
     }
 
     @Override
@@ -156,6 +198,19 @@ public class SaltAPIBuilder extends Builder {
 		saltFunc.put("batch", batchSize);
 		listener.getLogger().println("Running in batch mode. Batch size: "+batchSize);
 	    }
+	    if (myClientInterface.equals("runner")) {
+		saltFunc.put("mods", mods);
+
+		if (usePillar) {
+	            String myPillarkey = Utils.paramorize(build, listener, pillarkey);
+	            String myPillarvalue = Utils.paramorize(build, listener, pillarvalue);
+		
+		    JSONObject jPillar = new JSONObject();
+		    jPillar.put(JSONUtils.stripQuotes(myPillarkey), JSONUtils.stripQuotes(myPillarvalue));
+
+		    saltFunc.put("pillar", jPillar);
+		}
+	    }
 	    saltFunc.put("tgt", mytarget); 
 	    saltFunc.put("expr_form", targettype);
 	    saltFunc.put("fun", myfunction);
@@ -181,7 +236,7 @@ public class SaltAPIBuilder extends Builder {
 	    } else {
 		saltArray.add(saltFunc);
 	    }
-	    //listener.getLogger().println("Sending JSON: "+saltArray.toString());
+	    listener.getLogger().println("Sending JSON: "+saltArray.toString());
 
 	    Boolean myBlockBuild = blockbuild;
 	    if (myBlockBuild == null) {
@@ -284,7 +339,7 @@ public class SaltAPIBuilder extends Builder {
 			//Print problem
 			listener.getLogger().println("Problem on "+myfunction+" "+myarguments+" for "+mytarget+":\n"+httpResponse.toString(2));
 			return false;
-		    }
+                }
 		} catch (Exception e) {
 		    listener.getLogger().println("Problem with "+myfunction+" "+myarguments+" for "+mytarget+":\n"+e+"\n\n"+httpResponse.toString(2).split("\\\\n")[0]);
 		    return false;
