@@ -157,10 +157,20 @@ public class SaltAPIBuilder extends Builder {
     @Override
 	public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) {
 	    // This is where you 'build' the project.
+	    
+	    // If not not configured, grab the default
+	    int myJobPollTime = 10;
+	    if (jobPollTime == null) {
+		myJobPollTime = getDescriptor().getPollTime();
+	    } else {
+		myJobPollTime = jobPollTime;
+	    }
+	    Boolean mySaltMessageDebug = getDescriptor().getSaltMessageDebug();
 	    String myClientInterface = clientInterface;
 	    String mytarget = target;
 	    String myfunction = function;
 	    String myarguments = arguments;
+
 	    //listener.getLogger().println("Salt Arguments before: "+myarguments);
 	    mytarget = Utils.paramorize(build, listener, target);
 	    myfunction = Utils.paramorize(build, listener, function);
@@ -236,7 +246,9 @@ public class SaltAPIBuilder extends Builder {
 	    } else {
 		saltArray.add(saltFunc);
 	    }
-	    listener.getLogger().println("Sending JSON: "+saltArray.toString());
+	    if (mySaltMessageDebug) {
+	        listener.getLogger().println("Sending JSON: "+saltArray.toString());
+	    }
 
 	    Boolean myBlockBuild = blockbuild;
 	    if (myBlockBuild == null) {
@@ -290,13 +302,6 @@ public class SaltAPIBuilder extends Builder {
 		    return false;
 		}
 
-		// If not not configured, grab the default
-		int myJobPollTime = 10;
-		if (jobPollTime == null) {
-		    myJobPollTime = getDescriptor().getPollTime();
-		} else {
-		    myJobPollTime = jobPollTime;
-		}
 
 		//Now that we know how many minions have responded, and how many we are waiting on. Let's see more have finished
 		if (numMinionsDone < numMinions) {
@@ -344,6 +349,8 @@ public class SaltAPIBuilder extends Builder {
 		    listener.getLogger().println("Problem with "+myfunction+" "+myarguments+" for "+mytarget+":\n"+e+"\n\n"+httpResponse.toString(2).split("\\\\n")[0]);
 		    return false;
 		}
+
+		//valide return
 		if (httpResponse.toString().contains("TypeError")) {
 		    listener.getLogger().println("Salt reported an error on "+myfunction+" "+myarguments+" for "+mytarget+":\n"+httpResponse.toString(2));
 		    return false;
@@ -367,6 +374,7 @@ public class SaltAPIBuilder extends Builder {
 	public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
 
 	    private int pollTime=10;
+	    private boolean saltMessageDebug;
 
 	    public DescriptorImpl() {
 		load();
@@ -381,12 +389,17 @@ public class SaltAPIBuilder extends Builder {
 			//Fall back to default
 			pollTime = 10;
 		    }
+		    saltMessageDebug = formData.getBoolean("saltMessageDebug");
 		    save();
 		    return super.configure(req,formData);
 		}
 
 	    public int getPollTime() {
 		return pollTime;
+	    }
+
+	    public boolean getSaltMessageDebug() {
+		return saltMessageDebug;
 	    }
 
 	    public FormValidation doTestConnection(@QueryParameter("servername") final String servername, 
