@@ -55,4 +55,8 @@
     <f:textbox />
   </f:entry>
 
+  <f:entry title="KWArguments" field="kwarguments">
+    <f:textbox />
+  </f:entry>
+
 </j:jelly>

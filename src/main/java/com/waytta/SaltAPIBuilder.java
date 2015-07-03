@@ -34,6 +34,7 @@ public class SaltAPIBuilder extends Builder {
     private final String targettype;
     private final String function;
     private final String arguments;
+    private final String kwarguments;
     private final JSONObject clientInterfaces;
     private final String clientInterface;
     private final Boolean blockbuild;
@@ -46,7 +47,7 @@ public class SaltAPIBuilder extends Builder {
 
     // Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
     @DataBoundConstructor
-	public SaltAPIBuilder(String servername, String username, String userpass, String authtype, String target, String targettype, String function, String arguments, JSONObject clientInterfaces, Integer jobPollTime, String mods, String pillarkey, String pillarvalue) {
+	public SaltAPIBuilder(String servername, String username, String userpass, String authtype, String target, String targettype, String function, String arguments, String kwarguments, JSONObject clientInterfaces, Integer jobPollTime, String mods, String pillarkey, String pillarvalue) {
 	    this.servername = servername;
 	    this.username = username;
 	    this.userpass = userpass;
@@ -55,6 +56,7 @@ public class SaltAPIBuilder extends Builder {
 	    this.targettype = targettype;
 	    this.function = function;
 	    this.arguments = arguments;
+	    this.kwarguments = kwarguments;
 	    this.clientInterfaces = clientInterfaces;
 	    if (clientInterfaces.has("clientInterface")) {
 		this.clientInterface = clientInterfaces.get("clientInterface").toString();
@@ -129,6 +131,9 @@ public class SaltAPIBuilder extends Builder {
     public String getArguments() {
 	return arguments;
     }
+    public String getKwarguments() {
+	return kwarguments;
+    }
     public String getClientInterface() {
 	return clientInterface;
     }
@@ -170,11 +175,13 @@ public class SaltAPIBuilder extends Builder {
 	    String mytarget = target;
 	    String myfunction = function;
 	    String myarguments = arguments;
+	    String mykwarguments = kwarguments;
 
 	    //listener.getLogger().println("Salt Arguments before: "+myarguments);
 	    mytarget = Utils.paramorize(build, listener, target);
 	    myfunction = Utils.paramorize(build, listener, function);
 	    myarguments = Utils.paramorize(build, listener, arguments);
+	    mykwarguments = Utils.paramorize(build, listener, kwarguments);
 	    //listener.getLogger().println("Salt Arguments after: "+myarguments);
 
 	    //Setup connection for auth
@@ -226,26 +233,34 @@ public class SaltAPIBuilder extends Builder {
 	    saltFunc.put("fun", myfunction);
 	    if (myarguments.length() > 0){ 
 		List saltArguments = new ArrayList();
-		Map kwArgs = new HashMap();
 		//spit on comma seperated not inside of quotes
 		String[] argItems = myarguments.split(",(?=([^\"]*\"[^\"]*\")*[^\"]*$)");
 		for (String arg : argItems) {
 		    //remove spaces at begining or end
 		    arg = arg.replaceAll("^\\s+|\\s+$", "");
 		    arg = arg.replaceAll("\"|\\\"", "");
-		    if (arg.contains("=")) {
-			String[] kwString = arg.split("=");
+		    saltArguments.add(arg);
+		}
+		//Add any args to json message
+		saltFunc.element("arg", saltArguments);
+	    }
+	    if (mykwarguments.length() > 0){ 
+		Map kwArgs = new HashMap();
+		//spit on comma seperated not inside of quotes
+		String[] kwargItems = mykwarguments.split(",(?=([^\"]*\"[^\"]*\")*[^\"]*$)");
+		for (String kwarg : kwargItems) {
+		    //remove spaces at begining or end
+		    kwarg = kwarg.replaceAll("^\\s+|\\s+$", "");
+		    kwarg = kwarg.replaceAll("\"|\\\"", "");
+		    if (kwarg.contains("=")) {
+			String[] kwString = kwarg.split("=");
 			kwArgs.put(kwString[0], kwString[1]);
-		    } else {
-			saltArguments.add(arg);
 		    }
 		}
-		saltFunc.element("arg", saltArguments);
+		//Add any kwargs to json message
 		saltFunc.element("kwarg", kwArgs);
-		saltArray.add(saltFunc);
-	    } else {
-		saltArray.add(saltFunc);
 	    }
+            saltArray.add(saltFunc);
 	    if (mySaltMessageDebug) {
 	        listener.getLogger().println("Sending JSON: "+saltArray.toString());
 	    }
