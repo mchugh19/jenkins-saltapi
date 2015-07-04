@@ -254,7 +254,24 @@ public class SaltAPIBuilder extends Builder {
 		    kwarg = kwarg.replaceAll("\"|\\\"", "");
 		    if (kwarg.contains("=")) {
 			String[] kwString = kwarg.split("=");
-			kwArgs.put(kwString[0], kwString[1]);
+			if (kwString.length > 2){
+			    //kwarg contained more than one =. Let's put the string back together
+			    String kwFull = new String();
+			    for (String kwItem : kwString){
+				//Ignore the first item as it will remain the key
+				if ( kwItem == kwString[0] ) continue;
+				//add the second item
+				if ( kwItem == kwString[1] ) {
+				    kwFull += kwItem;
+				    continue;
+				}
+				//add all other items with an = to rejoin
+				kwFull += "="+kwItem;
+			    }
+			    kwArgs.put(kwString[0], kwFull);
+			} else {
+			    kwArgs.put(kwString[0], kwString[1]);
+			}
 		    }
 		}
 		//Add any kwargs to json message
