@@ -176,6 +176,7 @@ public class SaltAPIBuilder extends Builder {
 	    String myfunction = function;
 	    String myarguments = arguments;
 	    String mykwarguments = kwarguments;
+	    Boolean myBlockBuild = blockbuild;
 
 	    //listener.getLogger().println("Salt Arguments before: "+myarguments);
 	    mytarget = Utils.paramorize(build, listener, target);
@@ -214,6 +215,7 @@ public class SaltAPIBuilder extends Builder {
 	    if (myClientInterface.equals("local_batch")) {
 		saltFunc.put("batch", batchSize);
 		listener.getLogger().println("Running in batch mode. Batch size: "+batchSize);
+		myBlockBuild = true;
 	    }
 	    if (myClientInterface.equals("runner")) {
 		saltFunc.put("mods", mods);
@@ -282,7 +284,6 @@ public class SaltAPIBuilder extends Builder {
 	        listener.getLogger().println("Sending JSON: "+saltArray.toString());
 	    }
 
-	    Boolean myBlockBuild = blockbuild;
 	    if (myBlockBuild == null) {
 		//Set a sane default if uninitialized
 		myBlockBuild = false;
