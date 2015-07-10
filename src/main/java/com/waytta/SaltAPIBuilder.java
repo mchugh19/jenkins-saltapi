@@ -215,7 +215,6 @@ public class SaltAPIBuilder extends Builder {
 	    if (myClientInterface.equals("local_batch")) {
 		saltFunc.put("batch", batchSize);
 		listener.getLogger().println("Running in batch mode. Batch size: "+batchSize);
-		myBlockBuild = true;
 	    }
 	    if (myClientInterface.equals("runner")) {
 		saltFunc.put("mods", mods);
@@ -354,10 +353,6 @@ public class SaltAPIBuilder extends Builder {
 		    try {
 			returnArray = httpResponse.getJSONArray("return");
 			numMinionsDone = returnArray.getJSONObject(0).names().size();
-			if (myClientInterface.equals("local_batch")) {
-			    listener.getLogger().println("Minions finished: " + numMinionsDone);
-			    listener.getLogger().println(returnArray.toString(2));
-			}
 		    } catch (Exception e) {
 			listener.getLogger().println("Problem: "+myfunction+" "+myarguments+" for "+mytarget+":\n"+e+"\n\n"+httpResponse.toString(2).split("\\\\n")[0]);
 			return false;
