@@ -172,6 +172,7 @@ public class SaltAPIBuilder extends Builder {
 	    }
 	    Boolean mySaltMessageDebug = getDescriptor().getSaltMessageDebug();
 	    String myClientInterface = clientInterface;
+        String myservername = servername;
 	    String mytarget = target;
 	    String myfunction = function;
 	    String myarguments = arguments;
@@ -179,6 +180,7 @@ public class SaltAPIBuilder extends Builder {
 	    Boolean myBlockBuild = blockbuild;
 
 	    //listener.getLogger().println("Salt Arguments before: "+myarguments);
+        myservername = Utils.paramorize(build, listener, servername);
 	    mytarget = Utils.paramorize(build, listener, target);
 	    myfunction = Utils.paramorize(build, listener, function);
 	    myarguments = Utils.paramorize(build, listener, arguments);
@@ -197,7 +199,7 @@ public class SaltAPIBuilder extends Builder {
 	    JSONObject httpResponse = new JSONObject();
 
 	    //Get an auth token
-	    token = Utils.getToken(servername, authArray);
+	    token = Utils.getToken(myservername, authArray);
 	    if (token.contains("Error")) {
 		listener.getLogger().println(token);
 		return false;
@@ -292,7 +294,7 @@ public class SaltAPIBuilder extends Builder {
 	    if (myBlockBuild) {
 		String jid = new String();
 		//Send request to /minion url. This will give back a jid which we will need to poll and lookup for completion
-		httpResponse = Utils.getJSON(servername+"/minions", saltArray, token);
+		httpResponse = Utils.getJSON(myservername+"/minions", saltArray, token);
 		try {
 		    JSONArray returnArray = httpResponse.getJSONArray("return");
 		    for (Object o : returnArray ) {
@@ -302,7 +304,7 @@ public class SaltAPIBuilder extends Builder {
 		    //Print out success
 		    listener.getLogger().println("Running jid: " + jid);
 		} catch (Exception e) {
-		    listener.getLogger().println("Problem: "+myfunction+" "+myarguments+" to "+servername+" for "+mytarget+":\n"+e+"\n\n"+httpResponse.toString(2));
+		    listener.getLogger().println("Problem: "+myfunction+" "+myarguments+" to "+myservername+" for "+mytarget+":\n"+e+"\n\n"+httpResponse.toString(2));
 		    return false;
 		}
 
@@ -310,7 +312,7 @@ public class SaltAPIBuilder extends Builder {
 		int numMinions = 0;
 		int numMinionsDone = 0;
 		JSONArray returnArray = new JSONArray();
-		httpResponse = Utils.getJSON(servername+"/jobs/"+jid, null, token);
+		httpResponse = Utils.getJSON(myservername+"/jobs/"+jid, null, token);
 		try {
 		    //info array will tell us how many minions were targeted
 		    returnArray = httpResponse.getJSONArray("info");
@@ -330,7 +332,7 @@ public class SaltAPIBuilder extends Builder {
 		    }
 		    listener.getLogger().println(numMinionsDone + " minions are done");
 		} catch (Exception e) {
-		    listener.getLogger().println("Problem: "+myfunction+" "+myarguments+" to "+servername+" for "+mytarget+":\n"+e+"\n\n"+httpResponse.toString(2));
+		    listener.getLogger().println("Problem: "+myfunction+" "+myarguments+" to "+myservername+" for "+mytarget+":\n"+e+"\n\n"+httpResponse.toString(2));
 		    return false;
 		}
 
@@ -349,7 +351,7 @@ public class SaltAPIBuilder extends Builder {
 			listener.getLogger().println("Cancelling job");
 			return false;
 		    }
-		    httpResponse = Utils.getJSON(servername+"/jobs/"+jid, null, token);
+		    httpResponse = Utils.getJSON(myservername+"/jobs/"+jid, null, token);
 		    try {
 			returnArray = httpResponse.getJSONArray("return");
 			numMinionsDone = returnArray.getJSONObject(0).names().size();
@@ -362,11 +364,27 @@ public class SaltAPIBuilder extends Builder {
 		    listener.getLogger().println("Salt reported an error for "+myfunction+" "+myarguments+" for "+mytarget+":\n"+returnArray.toString(2));
 		    return false;
 		}
+
+        //If running script module check for non-zero exit codes in retcode.
+        returnArray = httpResponse.getJSONArray("return");
+        if (myfunction.equals("cmd.script")) {
+            for (Object o : returnArray) {
+                JSONObject minion = (JSONObject) o;
+                for (Object name : minion.names()) {
+                    Integer retcode = minion.getJSONObject(name.toString()).getInt("retcode");
+                    if (retcode != 0) {
+                        listener.getLogger().println("One or more minion did not return code 0 for "+myfunction+" "+myarguments+" for "+mytarget+":\n"+returnArray.toString(2));
+                        return false;
+                    }
+                }
+            }
+        }
+
 		//Loop is done. We have heard back from everybody. Good work team!
 		listener.getLogger().println("Response on "+myfunction+" "+myarguments+" for "+mytarget+":\n"+returnArray.toString(2));
 	    } else {
 		//Just send a salt request. Don't wait for reply
-		httpResponse = Utils.getJSON(servername, saltArray, token);
+		httpResponse = Utils.getJSON(myservername, saltArray, token);
 		try {
 		    if (!httpResponse.getJSONArray("return").isArray()) {
 			//Print problem
@@ -435,33 +453,41 @@ public class SaltAPIBuilder extends Builder {
 		    @QueryParameter("userpass") final String userpass, 
 		    @QueryParameter("authtype") final String authtype) 
 		throws IOException, ServletException {
-		    JSONObject httpResponse = new JSONObject();
-		    JSONArray authArray = new JSONArray();
-		    JSONObject auth = new JSONObject();
-		    auth.put("username", username);
-		    auth.put("password", userpass);
-		    auth.put("eauth", authtype);
-		    authArray.add(auth);
-		    String token = Utils.getToken(servername, authArray);
-		    if (token.contains("Error")) {
-			return FormValidation.error("Client error : "+token);
-		    } else {
-			return FormValidation.ok("Success");
-		    }
+            if (!servername.matches("\\{\\{\\w+\\}\\}")) {
+		        JSONObject httpResponse = new JSONObject();
+		        JSONArray authArray = new JSONArray();
+		        JSONObject auth = new JSONObject();
+		        auth.put("username", username);
+		        auth.put("password", userpass);
+		        auth.put("eauth", authtype);
+		        authArray.add(auth);
+		        String token = Utils.getToken(servername, authArray);
+		        if (token.contains("Error")) {
+			        return FormValidation.error("Client error : "+token);
+		        } else {
+			        return FormValidation.ok("Success");
+		        }
+            } else {
+                return FormValidation.warning("Cannot expand parametrized server name.");
+            }
 		}
 
 
 	    public FormValidation doCheckServername(@QueryParameter String value)
 		throws IOException, ServletException {
-		    if (value.length() == 0)
-			return FormValidation.error("Please specify a name");
-		    if (value.length() < 10)
-			return FormValidation.warning("Isn't the name too short?");
-		    if (!value.contains("https://") && !value.contains("http://"))
-			return FormValidation.warning("Missing protocol: Servername should be in the format https://host.domain:8000");
-		    if (!value.substring(7).contains(":"))
-			return FormValidation.warning("Missing port: Servername should be in the format https://host.domain:8000");
-		    return FormValidation.ok();
+            if (!value.matches("\\{\\{\\w+\\}\\}")) {
+		        if (value.length() == 0)
+			    return FormValidation.error("Please specify a name");
+		        if (value.length() < 10)
+			    return FormValidation.warning("Isn't the name too short?");
+		        if (!value.contains("https://") && !value.contains("http://"))
+			    return FormValidation.warning("Missing protocol: Servername should be in the format https://host.domain:8000");
+		        if (!value.substring(7).contains(":"))
+			    return FormValidation.warning("Missing port: Servername should be in the format https://host.domain:8000");
+		        return FormValidation.ok();
+            } else {
+                return FormValidation.warning("Cannot expand parametrized server name.");
+            }
 		}
 
 	    public FormValidation doCheckUsername(@QueryParameter String value)
