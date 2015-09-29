@@ -329,8 +329,8 @@ public class SaltAPIBuilder extends Builder {
 
             // If running script module check for non-zero exit codes in
             // retcode.
-            // returnArray = httpResponse.getJSONArray("return");
-            boolean isValidFunction = validateFunctionCall(httpResponse.getJSONArray("return"));
+            returnArray = httpResponse.getJSONArray("return");
+            boolean isValidFunction = validateFunctionCall(returnArray);
 
             if (!isValidFunction) {
                 listener.getLogger().println("One or more minion did not return code 0 for " + myfunction + " "
