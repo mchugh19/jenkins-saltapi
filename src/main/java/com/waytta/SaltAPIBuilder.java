@@ -102,6 +102,77 @@ public class SaltAPIBuilder extends Builder {
         }
     }
 
+    /*
+     * We'll use this from the <tt>config.jelly</tt>.
+     */
+    public String getServername() {
+        return servername;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public String getUserpass() {
+        return userpass;
+    }
+
+    public String getAuthtype() {
+        return authtype;
+    }
+
+    public String getTarget() {
+        return target;
+    }
+
+    public String getTargettype() {
+        return this.targettype;
+    }
+
+    public String getFunction() {
+        return function;
+    }
+
+    public String getArguments() {
+        return arguments;
+    }
+
+    public String getKwarguments() {
+        return kwarguments;
+    }
+
+    public String getClientInterface() {
+        return clientInterface;
+    }
+
+    public Boolean getBlockbuild() {
+        return blockbuild;
+    }
+
+    public String getBatchSize() {
+        return batchSize;
+    }
+
+    public Integer getJobPollTime() {
+        return jobPollTime;
+    }
+
+    public String getMods() {
+        return mods;
+    }
+
+    public Boolean getUsePillar() {
+        return usePillar;
+    }
+
+    public String getPillarkey() {
+        return pillarkey;
+    }
+
+    public String getPillarvalue() {
+        return pillarvalue;
+    }
+
     @Override
     public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) {
         // This is where you 'build' the project.
@@ -386,77 +457,6 @@ public class SaltAPIBuilder extends Builder {
             // Add any args to json message
             saltFunc.element("arg", saltArguments);
         }
-    }
-
-    /*
-     * We'll use this from the <tt>config.jelly</tt>.
-     */
-    public String getServername() {
-        return servername;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public String getUserpass() {
-        return userpass;
-    }
-
-    public String getAuthtype() {
-        return authtype;
-    }
-
-    public String getTarget() {
-        return target;
-    }
-
-    public String getTargettype() {
-        return this.targettype;
-    }
-
-    public String getFunction() {
-        return function;
-    }
-
-    public String getArguments() {
-        return arguments;
-    }
-
-    public String getKwarguments() {
-        return kwarguments;
-    }
-
-    public String getClientInterface() {
-        return clientInterface;
-    }
-
-    public Boolean getBlockbuild() {
-        return blockbuild;
-    }
-
-    public String getBatchSize() {
-        return batchSize;
-    }
-
-    public Integer getJobPollTime() {
-        return jobPollTime;
-    }
-
-    public String getMods() {
-        return mods;
-    }
-
-    public Boolean getUsePillar() {
-        return usePillar;
-    }
-
-    public String getPillarkey() {
-        return pillarkey;
-    }
-
-    public String getPillarvalue() {
-        return pillarvalue;
     }
 
     // Overridden for better type safety.
