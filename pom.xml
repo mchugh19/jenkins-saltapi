@@ -7,7 +7,7 @@
   </parent>
 
   <artifactId>saltstack</artifactId>
-  <version>1.5.1-SNAPSHOT</version>
+  <version>1.5.9-SNAPSHOT</version>
   <packaging>hpi</packaging>
   <name>Jenkins SaltStack plugin</name>
   <description>Allows Jenkins to send SaltStack messages</description>
@@ -39,6 +39,11 @@
       <id>repo.jenkins-ci.org</id>
       <url>http://repo.jenkins-ci.org/public/</url>
     </repository>
+    <repository>
+      <id>Sonatype-public</id>
+      <name>SnakeYAML repository</name>
+      <url>http://oss.sonatype.org/content/groups/public/</url>
+    </repository>
   </repositories>
 
   <pluginRepositories>
@@ -47,4 +52,12 @@
       <url>http://repo.jenkins-ci.org/public/</url>
     </pluginRepository>
   </pluginRepositories>
+
+   <dependencies>
+     <dependency>
+       <groupId>org.yaml</groupId>
+       <artifactId>snakeyaml</artifactId>
+       <version>1.16</version>
+     </dependency>
+   </dependencies>
 </project>

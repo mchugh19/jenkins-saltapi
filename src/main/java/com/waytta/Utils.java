@@ -164,6 +164,13 @@ public class Utils {
                         break;
                     }
                 }
+                if (jsonObject.has("result")) {
+                    result = jsonObject.getBoolean("result");
+
+                    if (!result) {
+                        break;
+                    }
+                }
 
                 result = validateInnerJsonObject(jsonObject);
 

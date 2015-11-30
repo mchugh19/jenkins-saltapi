@@ -11,6 +11,13 @@
       <f:checkbox name="saltMessageDebug" checked="${instance.saltMessageDebug}"/>
     </f:entry>
 
+    <f:entry title="Display format" description="Configure display of SaltAPI response">
+      <select name="outputFormat">
+        <f:option value="json" selected="${instance.outputFormat == 'json'}">json</f:option>
+        <f:option value="yaml" selected="${instance.outputFormat == 'yaml'}">yaml</f:option>
+      </select>
+    </f:entry>
+
   </f:section>
 
 </j:jelly>

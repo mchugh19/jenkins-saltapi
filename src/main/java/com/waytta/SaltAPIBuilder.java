@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.yaml.snakeyaml.Yaml;
+
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -185,6 +187,7 @@ public class SaltAPIBuilder extends Builder {
             myJobPollTime = jobPollTime;
         }
         Boolean mySaltMessageDebug = getDescriptor().getSaltMessageDebug();
+        String myOutputFormat = getDescriptor().getOutputFormat();
         String myClientInterface = clientInterface;
         String myservername = Utils.paramorize(build, listener, servername);
         String mytarget = Utils.paramorize(build, listener, target);
@@ -198,6 +201,7 @@ public class SaltAPIBuilder extends Builder {
         JSONArray authArray = createAuthArray();
         // listener.getLogger().println("Sending auth: "+authArray.toString());
         JSONObject httpResponse = new JSONObject();
+	JSONArray returnArray = new JSONArray();
 
         // Get an auth token
         token = Utils.getToken(myservername, authArray);
@@ -205,9 +209,8 @@ public class SaltAPIBuilder extends Builder {
             listener.getLogger().println(token);
             return false;
         }
+        // If we got this far auth must have been good and we've got a token
 
-        // If we got this far, auth must have been pretty good and we've got a
-        // token
         // Hardcode clientInterface if not yet set. Once constructor runs, this
         // will not be necessary
         if (myClientInterface == null) {
@@ -236,7 +239,7 @@ public class SaltAPIBuilder extends Builder {
             // will need to poll and lookup for completion
             httpResponse = Utils.getJSON(myservername + "/minions", saltArray, token);
             try {
-                JSONArray returnArray = httpResponse.getJSONArray("return");
+                returnArray = httpResponse.getJSONArray("return");
                 for (Object o : returnArray) {
                     JSONObject line = (JSONObject) o;
                     jid = line.getString("jid");
@@ -253,7 +256,6 @@ public class SaltAPIBuilder extends Builder {
             // Request successfully sent. Now use jid to check if job complete
             int numMinions = 0;
             int numMinionsDone = 0;
-            JSONArray returnArray = new JSONArray();
             httpResponse = Utils.getJSON(myservername + "/jobs/" + jid, null, token);
             try {
                 // info array will tell us how many minions were targeted
@@ -310,32 +312,11 @@ public class SaltAPIBuilder extends Builder {
                     return false;
                 }
             }
-            if (returnArray.get(0).toString().contains("TypeError")) {
-                listener.getLogger().println("Salt reported an error for " + myfunction + " "
-                        + myarguments + " for " + mytarget + ":\n" + returnArray.toString(2));
-                return false;
-            }
-
-            // If running script module check for non-zero exit codes in
-            // retcode.
-            returnArray = httpResponse.getJSONArray("return");
-            boolean validFunctionExecution = Utils.validateFunctionCall(returnArray);
-
-            if (!validFunctionExecution) {
-                listener.getLogger()
-                        .println("ERROR occurred !\nERROR: One or more minion did not return code 0 for "
-                                + myfunction + " " + myarguments + " for " + mytarget + ":\n"
-                                + returnArray.toString(2));
-                return false;
-            }
-
-            // Loop is done. We have heard back from everybody. Good work team!
-            listener.getLogger().println("Response on " + myfunction + " " + myarguments + " for "
-                    + mytarget + ":\n" + returnArray.toString(2));
         } else {
             // Just send a salt request. Don't wait for reply
             httpResponse = Utils.getJSON(myservername, saltArray, token);
             try {
+		returnArray = httpResponse.getJSONArray("return");
                 if (!httpResponse.getJSONArray("return").isArray()) {
                     // Print problem
                     listener.getLogger().println("Problem on " + myfunction + " " + myarguments + " for "
@@ -347,19 +328,39 @@ public class SaltAPIBuilder extends Builder {
                         + mytarget + ":\n" + e + "\n\n" + httpResponse.toString(2).split("\\\\n")[0]);
                 return false;
             }
-
-            // valide return
-            if (httpResponse.toString().contains("TypeError")) {
-                listener.getLogger().println("Salt reported an error on " + myfunction + " "
-                        + myarguments + " for " + mytarget + ":\n" + httpResponse.toString(2));
-                return false;
-            }
-
-            listener.getLogger().println("Response on " + myfunction + " " + myarguments + " for "
-                    + mytarget + ":\n" + httpResponse.toString(2));
         }
-        // No fail condition reached. Must be good.
-        return true;
+	//Done sending message. Check for error and print out results
+	if (returnArray.get(0).toString().contains("TypeError")) {
+	    listener.getLogger().println("Salt reported an error for " + myfunction + " "
+		    + myarguments + " for " + mytarget + ":\n" + returnArray.toString(2));
+	    return false;
+	}
+
+	boolean validFunctionExecution = Utils.validateFunctionCall(returnArray);
+
+	if (!validFunctionExecution) {
+	    listener.getLogger()
+		.println("ERROR occurred !\nERROR: One or more minion did not return code 0 for "
+			+ myfunction + " " + myarguments + " for " + mytarget + ":\n"
+			+ returnArray.toString(2));
+	    return false;
+	}
+
+	// Loop is done. We have heard back from everybody. Good work team!
+	listener.getLogger().println("Response on " + myfunction + " " + myarguments + " for "
+		+ mytarget + ":");
+	if (myOutputFormat.equals("json")) {
+	    listener.getLogger().println(returnArray.toString(2));
+	} else if (myOutputFormat.equals("yaml")) {
+	    Object outputObject = returnArray.toArray();
+	    Yaml yaml = new Yaml();
+	    listener.getLogger().println(yaml.dump(outputObject));
+	} else {
+	    listener.getLogger().println("Error: Unknown output Format: x" + myOutputFormat + "x");
+	    return false;
+	}
+	// No fail condition reached. Must be good.
+	return true;
     }
 
     private JSONArray createAuthArray() {
@@ -406,8 +407,8 @@ public class SaltAPIBuilder extends Builder {
     private void addKwArgumentsToSaltFunction(String mykwarguments, JSONObject saltFunc) {
         if (mykwarguments.length() > 0) {
             Map<String, String> kwArgs = new HashMap<String, String>();
-            // spit on comma seperated not inside of quotes
-            String[] kwargItems = mykwarguments.split(",(?=([^\"]*\"[^\"]*\")*[^\"]*$)");
+            // spit on comma seperated not inside of single and double quotes
+            String[] kwargItems = mykwarguments.split(",(?=(?:[^'\"]|'[^']*'|\"[^\"]*\")*$)");
             for (String kwarg : kwargItems) {
                 // remove spaces at begining or end
                 kwarg = kwarg.replaceAll("^\\s+|\\s+$", "");
@@ -444,13 +445,14 @@ public class SaltAPIBuilder extends Builder {
     private void addArgumentsToSaltFunction(String myarguments, JSONObject saltFunc) {
         if (myarguments.length() > 0) {
             List<String> saltArguments = new ArrayList<String>();
-            // spit on comma seperated not inside of quotes
-            String[] argItems = myarguments.split(",(?=([^\"]*\"[^\"]*\")*[^\"]*$)");
+            // spit on comma seperated not inside of single and double quotes
+            String[] argItems = myarguments.split(",(?=(?:[^'\"]|'[^']*'|\"[^\"]*\")*$)");
 
             for (String arg : argItems) {
                 // remove spaces at begining or end
                 arg = arg.replaceAll("^\\s+|\\s+$", "");
-                arg = arg.replaceAll("\"|\\\"", "");
+                // if string wrapped in quotes, remove them since adding to list re-quotes
+                arg = arg.replaceAll("(^')|(^\")|('$)|(\"$)", "");
                 saltArguments.add(arg);
             }
 
@@ -472,6 +474,7 @@ public class SaltAPIBuilder extends Builder {
 
         private int pollTime = 10;
         private boolean saltMessageDebug;
+        private String outputFormat = "json";
 
         public DescriptorImpl() {
             load();
@@ -487,6 +490,7 @@ public class SaltAPIBuilder extends Builder {
                 pollTime = 10;
             }
             saltMessageDebug = formData.getBoolean("saltMessageDebug");
+            outputFormat = formData.getString("outputFormat");
             save();
             return super.configure(req, formData);
         }
@@ -497,6 +501,10 @@ public class SaltAPIBuilder extends Builder {
 
         public boolean getSaltMessageDebug() {
             return saltMessageDebug;
+        }
+
+        public String getOutputFormat() {
+            return outputFormat;
         }
 
         public FormValidation doTestConnection(@QueryParameter("servername") final String servername,
