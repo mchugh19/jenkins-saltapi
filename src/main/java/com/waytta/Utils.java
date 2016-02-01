@@ -138,11 +138,16 @@ public class Utils {
         boolean result = true;
 
         for (Object o : returnArray) {
-            result = validateInnerJsonObject((JSONObject) o);
-
-            if (!result) {
-                break;
-            }
+            if (o instanceof Boolean) {
+		result = (Boolean) o;
+	    } else if (o instanceof String){
+		result = false;
+	    } else {
+                result = validateInnerJsonObject((JSONObject) o);
+                if (!result) {
+                    break;
+                }
+	    }
         }
 
         return result;
