@@ -7,9 +7,20 @@ import java.util.Map;
 
 import org.yaml.snakeyaml.Yaml;
 
+import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.CredentialsMatchers;
+import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
+import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
+import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
+import com.cloudbees.plugins.credentials.domains.DomainRequirement;
+import jenkins.model.Jenkins;
+import hudson.security.ACL;
+import hudson.model.Item;
+
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.AncestorInPath;
 
 import hudson.Extension;
 import hudson.Launcher;
@@ -26,8 +37,6 @@ import net.sf.json.util.JSONUtils;
 public class SaltAPIBuilder extends Builder {
 
     private final String servername;
-    private final String username;
-    private final String userpass;
     private final String authtype;
     private final String target;
     private final String targettype;
@@ -44,12 +53,13 @@ public class SaltAPIBuilder extends Builder {
     private final String pillarkey;
     private final String pillarvalue;
 
+    private String credentialsId;
+
     // Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
     @DataBoundConstructor
-    public SaltAPIBuilder(String servername, String username, String userpass, String authtype, String target, String targettype, String function, String arguments, String kwarguments, JSONObject clientInterfaces, Integer jobPollTime, String mods, String pillarkey, String pillarvalue) {
+    public SaltAPIBuilder(String servername, String authtype, String target, String targettype, String function, String arguments, String kwarguments, JSONObject clientInterfaces, Integer jobPollTime, String mods, String pillarkey, String pillarvalue, String credentialsId) {
+	this.credentialsId = credentialsId;
         this.servername = servername;
-        this.username = username;
-        this.userpass = userpass;
         this.authtype = authtype;
         this.target = target;
         this.targettype = targettype;
@@ -111,14 +121,6 @@ public class SaltAPIBuilder extends Builder {
         return servername;
     }
 
-    public String getUsername() {
-        return username;
-    }
-
-    public String getUserpass() {
-        return userpass;
-    }
-
     public String getAuthtype() {
         return authtype;
     }
@@ -175,6 +177,10 @@ public class SaltAPIBuilder extends Builder {
         return pillarvalue;
     }
 
+    public String getCredentialsId() {
+        return credentialsId;
+    }
+
     @Override
     public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) {
         // This is where you 'build' the project.
@@ -196,9 +202,15 @@ public class SaltAPIBuilder extends Builder {
         String mykwarguments = Utils.paramorize(build, listener, kwarguments);
         Boolean myBlockBuild = blockbuild;
 
+	StandardUsernamePasswordCredentials credential = getCredentialById(getCredentialsId());
+	if (credential == null) {
+	    listener.error("Invalid credentials");
+	    return true;
+	}
+
         // Setup connection for auth
         String token = new String();
-        JSONArray authArray = createAuthArray();
+        JSONArray authArray = createAuthArray(credential);
         // listener.getLogger().println("Sending auth: "+authArray.toString());
         JSONObject httpResponse = new JSONObject();
 	JSONArray returnArray = new JSONArray();
@@ -363,11 +375,11 @@ public class SaltAPIBuilder extends Builder {
 	return true;
     }
 
-    private JSONArray createAuthArray() {
+    private JSONArray createAuthArray(StandardUsernamePasswordCredentials credential) {
         JSONArray authArray = new JSONArray();
         JSONObject auth = new JSONObject();
-        auth.put("username", username);
-        auth.put("password", userpass);
+        auth.put("username", credential.getUsername());
+        auth.put("password", credential.getPassword().getPlainText());
         auth.put("eauth", authtype);
         authArray.add(auth);
 
@@ -442,6 +454,22 @@ public class SaltAPIBuilder extends Builder {
         }
     }
 
+    StandardUsernamePasswordCredentials getCredentialById(String credentialId) {
+	List<StandardUsernamePasswordCredentials> credentials = getCredentials(Jenkins.getInstance());
+	for (StandardUsernamePasswordCredentials credential : credentials) {
+	    if (credential.getId().equals(credentialId)) {
+		return credential;
+	    }
+	}
+	return null;
+    }
+
+    static List<StandardUsernamePasswordCredentials> getCredentials(Jenkins context) {
+        List<DomainRequirement> requirements = URIRequirementBuilder.create().build();
+	List<StandardUsernamePasswordCredentials> credentials = CredentialsProvider.lookupCredentials(StandardUsernamePasswordCredentials.class, context, ACL.SYSTEM, requirements);
+	return credentials;
+    }
+
     private void addArgumentsToSaltFunction(String myarguments, JSONObject saltFunc) {
         if (myarguments.length() > 0) {
             List<String> saltArguments = new ArrayList<String>();
@@ -472,7 +500,7 @@ public class SaltAPIBuilder extends Builder {
     @Extension // This indicates to Jenkins that this is an implementation of an extension point.
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
 
-        private int pollTime = 10;
+	private int pollTime = 10;
         private boolean saltMessageDebug;
         private String outputFormat = "json";
 
@@ -507,20 +535,32 @@ public class SaltAPIBuilder extends Builder {
             return outputFormat;
         }
 
-        public FormValidation doTestConnection(@QueryParameter("servername") final String servername,
-                @QueryParameter("username") final String username,
-                @QueryParameter("userpass") final String userpass,
-                @QueryParameter("authtype") final String authtype) {
+        public FormValidation doTestConnection(
+	        @QueryParameter String servername,
+	        @QueryParameter String credentialsId,
+	        @QueryParameter String authtype) {
+	    StandardUsernamePasswordCredentials usedCredential = null;
+	    List<StandardUsernamePasswordCredentials> credentials = getCredentials(Jenkins.getInstance());
+	    for (StandardUsernamePasswordCredentials credential : credentials) {
+		if (credential.getId().equals(credentialsId)) {
+		    usedCredential = credential;
+		}
+	    }
+
+	    if (usedCredential == null) {
+		return FormValidation.error("CredentialId error: " + usedCredential);
+	    }
+
             if (!servername.matches("\\{\\{\\w+\\}\\}")) {
                 JSONArray authArray = new JSONArray();
                 JSONObject auth = new JSONObject();
-                auth.put("username", username);
-                auth.put("password", userpass);
+                auth.put("username", usedCredential.getUsername());
+                auth.put("password", usedCredential.getPassword().getPlainText());
                 auth.put("eauth", authtype);
                 authArray.add(auth);
                 String token = Utils.getToken(servername, authArray);
                 if (token.contains("Error")) {
-                    return FormValidation.error("Client error : " + token);
+                    return FormValidation.error("Client error: " + token);
                 }
 
                 return FormValidation.ok("Success");
@@ -528,6 +568,15 @@ public class SaltAPIBuilder extends Builder {
 
             return FormValidation.warning("Cannot expand parametrized server name.");
         }
+
+	public StandardListBoxModel doFillCredentialsIdItems(
+		@AncestorInPath Jenkins context, 
+		@QueryParameter final String servername) {
+	    StandardListBoxModel result = new StandardListBoxModel();
+	    result.withEmptySelection();
+	    result.withMatching(CredentialsMatchers.instanceOf(StandardUsernamePasswordCredentials.class), getCredentials(context));
+	    return result;
+	}
 
         public FormValidation doCheckServername(@QueryParameter String value) {
             if (!value.matches("\\{\\{\\w+\\}\\}")) {
@@ -547,13 +596,30 @@ public class SaltAPIBuilder extends Builder {
             return FormValidation.warning("Cannot expand parametrized server name.");
         }
 
-        public FormValidation doCheckUsername(@QueryParameter String value) {
-            return validateFormStringField(value, "Please specify a name", "Isn't the name too short?");
-        }
+	public FormValidation doCheckCredentialsId(@AncestorInPath Item project, @QueryParameter String value) {
+	    if (project == null || !project.hasPermission(Item.CONFIGURE)) {
+		return FormValidation.ok();
+	    }
 
-        public FormValidation doCheckUserpass(@QueryParameter String value) {
-            return validateFormStringField(value, "Please specify a password", "Isn't it too short?");
-        }
+	    if (value == null) {
+		return FormValidation.ok();
+	    }
+
+	    StandardUsernamePasswordCredentials usedCredential = null;
+	    List<StandardUsernamePasswordCredentials> credentials = getCredentials(Jenkins.getInstance());
+	    for (StandardUsernamePasswordCredentials credential : credentials) {
+		if (credential.getId().equals(value)) {
+		    usedCredential = credential;
+		}
+	    }
+
+	    if (usedCredential == null) {
+		return FormValidation.error("Cannot find any credentials with id " + value);
+	    }
+
+	    return FormValidation.ok();
+	}
+
 
         public FormValidation doCheckTarget(@QueryParameter String value) {
             return validateFormStringField(value, "Please specify a salt target", "Isn't it too short?");

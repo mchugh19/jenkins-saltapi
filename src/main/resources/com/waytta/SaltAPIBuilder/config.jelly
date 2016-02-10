@@ -1,14 +1,14 @@
-<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:c="/lib/credentials">
 
   <f:entry title="Server Name" field="servername">
     <f:textbox />
   </f:entry>
-  <f:entry title="User Name" field="username">
-    <f:textbox />
+
+  <f:entry title="Credentials" field="credentialsId">
+    <c:select />
   </f:entry>
-  <f:entry title="User Password" field="userpass">
-    <f:password />
-  </f:entry>
+
+
   <f:entry title="Auth Type" field="authtype">
     <select name="authtype">
       <f:option value="pam" selected="${instance.authtype == 'pam'}">pam</f:option>
@@ -17,7 +17,7 @@
   </f:entry>
   <f:validateButton
    title="${%Test Connection}" progress="${%Testing...}"
-   method="testConnection" with="servername,username,userpass,authtype" />
+   method="testConnection" with="servername,credentialsId,authtype" />
 
   <f:dropdownList name="clientInterfaces" title="Client Interface">
     <f:dropdownListBlock title="local" value="local" selected="${instance.clientInterface == 'local'}">
