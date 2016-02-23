@@ -18,6 +18,7 @@ import hudson.security.ACL;
 import hudson.model.Item;
 
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.AncestorInPath;
@@ -41,8 +42,8 @@ public class SaltAPIBuilder extends Builder {
     private final String target;
     private final String targettype;
     private final String function;
-    private final String arguments;
-    private final String kwarguments;
+    private String arguments;
+    private String kwarguments;
     private final JSONObject clientInterfaces;
     private final String clientInterface;
     private final Boolean blockbuild;
@@ -57,15 +58,13 @@ public class SaltAPIBuilder extends Builder {
 
     // Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
     @DataBoundConstructor
-    public SaltAPIBuilder(String servername, String authtype, String target, String targettype, String function, String arguments, String kwarguments, JSONObject clientInterfaces, Integer jobPollTime, String mods, String pillarkey, String pillarvalue, String credentialsId) {
+    public SaltAPIBuilder(String servername, String authtype, String target, String targettype, String function, JSONObject clientInterfaces, String mods, String pillarkey, String pillarvalue, String credentialsId) {
 	this.credentialsId = credentialsId;
         this.servername = servername;
         this.authtype = authtype;
         this.target = target;
         this.targettype = targettype;
         this.function = function;
-        this.arguments = arguments;
-        this.kwarguments = kwarguments;
         this.clientInterfaces = clientInterfaces;
         if (clientInterfaces.has("clientInterface")) {
             this.clientInterface = clientInterfaces.get("clientInterface").toString();
@@ -141,8 +140,18 @@ public class SaltAPIBuilder extends Builder {
         return arguments;
     }
 
+    @DataBoundSetter
+    public void setArguments(String arguments) {
+        this.arguments = arguments;
+    }
+
     public String getKwarguments() {
         return kwarguments;
+    }
+
+    @DataBoundSetter
+    public void setKwarguments(String kwarguments) {
+        this.kwarguments = kwarguments;
     }
 
     public String getClientInterface() {
@@ -192,6 +201,7 @@ public class SaltAPIBuilder extends Builder {
         } else {
             myJobPollTime = jobPollTime;
         }
+
         Boolean mySaltMessageDebug = getDescriptor().getSaltMessageDebug();
         String myOutputFormat = getDescriptor().getOutputFormat();
         String myClientInterface = clientInterface;
