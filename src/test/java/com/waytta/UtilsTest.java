@@ -105,4 +105,45 @@ public class UtilsTest {
 
         Assert.assertFalse(Utils.validateFunctionCall(jsonArray));
     }
+
+    @Test
+    public void testValidateFunctionCallForFailedHighstate() {
+	JSONArray jsonArray = JSONArray.fromObject("[{\"data\": {\n" +
+		"\"minionname\": {\n" +
+		"  \"cmd_|-fails_|-/bin/false_|-run\": {\n" +
+		"    \"__run_num__\": 0,\n" +
+		"    \"_stamp\": \"2016-02-23T21:15:55.813678\",\n" +
+		"    \"changes\": {\n" +
+		"      \"pid\": 16745,\n" +
+		"      \"retcode\": 1,\n" +
+		"      \"stderr\": \"\",\n" +
+		"      \"stdout\": \"\" },\n" +
+		"    \"comment\": \"Command \\\"/bin/false\\\" run\",\n" +
+		"    \"duration\": 17.302,\n" +
+		"    \"fun\": \"state.sls\",\n" +
+		"    \"id\": \"minionname\",\n" +
+		"    \"jid\": \"20160223151555485695\",\n" +
+		"    \"name\": \"/bin/false\",\n" +
+		"    \"start_time\": \"15:15:29.462937\",\n" +
+		"    \"result\": false,\n" +
+		"    \"retcode\":2,\n" +
+		"    \"return\": \"Error: cmd.run\",\n" +
+		"    \"success\": false\n" +
+		"}}}}]");
+
+	Assert.assertFalse(Utils.validateFunctionCall(jsonArray));
+    }
+
+    @Test
+    public void testInvalidValidateFunctionCallForMissingPillar() {
+        JSONArray jsonArray = JSONArray.fromObject("[{\n" +
+	        "\"data\": {\n" +
+		  "\"minionname\": [\n" +
+                  "    \"Rendering SLS 'base:failures.pillar' failed: Jinja variable 'dict object' has no attribute 'nope'\"\n" +
+                  "]},\n" +
+		"\"outputter\":\"highstate\"\n" +
+		"}]");
+
+        Assert.assertFalse(Utils.validateFunctionCall(jsonArray));
+    }
 }
