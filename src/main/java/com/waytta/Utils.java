@@ -159,9 +159,19 @@ public class Utils {
         for (Object name : minion.names()) {
             Object field = minion.get(name.toString());
 
+	    //test if minion results are a JSONArray which indicates failure
+            if (field instanceof JSONArray) {
+		result = false;
+
+		if (!result) {
+		    return result;
+		}
+	    }
+
             if (field instanceof JSONObject) {
                 JSONObject jsonObject = (JSONObject) field;
 
+		//test if cmd.run return is non zero
                 if (jsonObject.has(RETCODE_FIELD_NAME)) {
                     result = jsonObject.getInt(RETCODE_FIELD_NAME) == 0;
 
@@ -169,6 +179,8 @@ public class Utils {
                         break;
                     }
                 }
+
+		//test if result is false
                 if (jsonObject.has("result")) {
                     result = jsonObject.getBoolean("result");
 
@@ -186,5 +198,6 @@ public class Utils {
         }
 
         return result;
+
     }
 }
