@@ -59,4 +59,8 @@
     <f:textbox />
   </f:entry>
 
+  <f:entry title="Save output to environment variable" field="saveEnvVar" description="Save Salt return into environment variable SALTBUILDOUPUT">
+    <f:checkbox />
+  </f:entry>
+
 </j:jelly>

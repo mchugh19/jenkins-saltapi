@@ -55,6 +55,7 @@ public class SaltAPIBuilder extends Builder {
     private final String pillarvalue;
 
     private String credentialsId;
+    private Boolean saveEnvVar;
 
     // Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
     @DataBoundConstructor
@@ -188,6 +189,15 @@ public class SaltAPIBuilder extends Builder {
 
     public String getCredentialsId() {
         return credentialsId;
+    }
+
+    @DataBoundSetter
+    public void setSaveEnvVar(Boolean saveEnvVar) {
+        this.saveEnvVar = saveEnvVar;
+    }
+
+    public Boolean getSaveEnvVar() {
+	return saveEnvVar;
     }
 
     @Override
@@ -381,6 +391,12 @@ public class SaltAPIBuilder extends Builder {
 	    listener.getLogger().println("Error: Unknown output Format: x" + myOutputFormat + "x");
 	    return false;
 	}
+
+        //Save saltapi output to env if requested
+	if (saveEnvVar) {
+	    build.addAction(new PublishEnvVarAction("SALTBUILDOUTPUT", returnArray.toString(2)));
+	}
+
 	// No fail condition reached. Must be good.
 	return true;
     }
