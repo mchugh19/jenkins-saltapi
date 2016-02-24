@@ -156,17 +156,23 @@ public class Utils {
     private static boolean validateInnerJsonObject(JSONObject minion) {
         boolean result = true;
 
-        for (Object name : minion.names()) {
-            Object field = minion.get(name.toString());
+	//test if minion results are a JSONArray which indicates failure
+	if (minion.has("data")) {
+	    JSONObject minionData = minion.getJSONObject("data");
+	    for (Object name : minionData.names()) {
+		Object field = minionData.get(name.toString());
+		if (field instanceof JSONArray) {
+		    result = false;
 
-	    //test if minion results are a JSONArray which indicates failure
-            if (field instanceof JSONArray) {
-		result = false;
-
-		if (!result) {
-		    return result;
+		    if (!result) {
+			return result;
+		    }
 		}
 	    }
+	}
+
+        for (Object name : minion.names()) {
+            Object field = minion.get(name.toString());
 
             if (field instanceof JSONObject) {
                 JSONObject jsonObject = (JSONObject) field;

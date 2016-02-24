@@ -394,7 +394,7 @@ public class SaltAPIBuilder extends Builder {
 
         //Save saltapi output to env if requested
 	if (saveEnvVar) {
-	    build.addAction(new PublishEnvVarAction("SALTBUILDOUTPUT", returnArray.toString(2)));
+	    build.addAction(new PublishEnvVarAction("SALTBUILDOUTPUT", returnArray.toString()));
 	}
 
 	// No fail condition reached. Must be good.

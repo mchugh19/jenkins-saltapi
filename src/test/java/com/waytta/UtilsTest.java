@@ -146,4 +146,63 @@ public class UtilsTest {
 
         Assert.assertFalse(Utils.validateFunctionCall(jsonArray));
     }
+
+    @Test
+    public void testValidateDockerInitWithArrays() {
+        JSONArray jsonArray = JSONArray.fromObject("[{\n" +
+	    "\"data\": {\n" +
+	    "\"celery01.mydomain.com\": {\n" +
+	    "\"dockerng_|-celery-c-celery_task-1-container_|-c-celery_task-1_|-running\":   {\n" +
+		"\"comment\": \"Container 'c-celery_task-1' was replaced. Image changed from 'registry.mydomain.com/celery_task:11d77cc6c1a21d84fd06f2abc982faf940ee392d' to 'registry.mydomain.com/celery_task:84ff045f69b25c4143000aa744d771eed7373357'.\",\n" +
+		"\"name\": \"c-celery_task-1\",\n" +
+		"\"start_time\": \"17:29:56.303184\",\n" +
+		"\"result\": true,\n" +
+		"\"duration\": 4973.264,\n" +
+		"\"__run_num__\": 1,\n" +
+		"\"changes\":     {\n" +
+		"\"diff\": {\"image\":       {\n" +
+		"\"new\": \"registry.mydomain.com/celery_task:84ff045f69b25c4143000aa744d771eed7373357\",\n" +
+		"\"old\": \"registry.mydomain.com/celery_task:11d77cc6c1a21d84fd06f2abc982faf940ee392d\"\n" +
+		"}},\n" +
+		"\"removed\": [\"7913e24c53235f2ecf915ca397ea7e48ef9b4f4245b1cb25e72a96bba506314f\"],\n" +
+		"\"added\":       {\n" +
+		"\"Time_Elapsed\": 0.03751707,\n" +
+		"\"Id\": \"77d2301d0e0735550b9cf535fbac466b611be59ac70f351061c00b77395d1151\",\n" +
+		"\"Name\": \"c-celery_task-1\",\n" +
+		"\"Warnings\": null\n" +
+		"}\n" +
+		"}\n" +
+		"},\n" +
+		"\"dockerng_|-celery-celery_task-image_|-registry.mydomain.com/celery_task:84ff045f69b25c4143000aa744d771eed7373357_|-image_present\":   {\n" +
+		"\"comment\": \"Image 'registry.mydomain.com/celery_task:84ff045f69b25c4143000aa744d771eed7373357' was pulled\",\n" +
+		"\"name\": \"registry.mydomain.com/celery_task:84ff045f69b25c4143000aa744d771eed7373357\",\n" +
+		"\"start_time\": \"17:29:48.444762\",\n" +
+		"\"result\": true,\n" +
+		"\"duration\": 7858.216,\n" +
+		"\"__run_num__\": 0,\n" +
+		"\"changes\":     {\n" +
+		"\"Layers\":       {\n" +
+		"\"Pulled\":         [\n" +
+		"\"a3ed95caeb02\",\n" +
+		"\"8fb0f56b3447\",\n" +
+		"\"0d1cc929b218\"\n" +
+		"],\n" +
+		"\"Already_Pulled\":         [\n" +
+		"\"4ff201d9f6ac\",\n" +
+		"\"a3ed95caeb02\",\n" +
+		"\"b4b8389cb98d\",\n" +
+		"\"071ee56cce56\",\n" +
+		"\"9690bd523008\",\n" +
+		"\"c1c4f1a1eb80\",\n" +
+		"\"177a932959c7\"\n" +
+		"]\n" +
+		"},\n" +
+		"\"Status\": \"Downloaded newer image for registry.mydomain.com/celery_task:84ff045f69b25c4143000aa744d771eed7373357\",\n" +
+		"\"Time_Elapsed\": 7.8480453\n" +
+		"}\n" +
+		"}\n" +
+		"}}}]");
+
+	Assert.assertTrue(Utils.validateFunctionCall(jsonArray));
+    }
 }
