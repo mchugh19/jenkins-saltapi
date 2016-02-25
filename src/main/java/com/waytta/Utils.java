@@ -143,6 +143,19 @@ public class Utils {
 	    } else if (o instanceof String){
 		result = false;
 	    } else {
+		//detect errors like "return":[{"minionname":["Rendering SLS... failed"]}]
+		JSONObject possibleMinion = JSONObject.fromObject(o);
+		for (Object name : possibleMinion.names()) {
+		    Object field = possibleMinion.get(name.toString());
+		    if (field instanceof JSONArray) {
+			result = false;
+
+			if (!result) {
+			    return result;
+			}
+		    }
+		}
+
                 result = validateInnerJsonObject((JSONObject) o);
                 if (!result) {
                     break;

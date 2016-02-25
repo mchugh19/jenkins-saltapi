@@ -34,6 +34,7 @@ import hudson.util.FormValidation;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import net.sf.json.util.JSONUtils;
+import net.sf.json.JSONException;
 
 public class SaltAPIBuilder extends Builder {
 
@@ -435,7 +436,14 @@ public class SaltAPIBuilder extends Builder {
                 String myPillarvalue = Utils.paramorize(build, listener, pillarvalue);
 
                 JSONObject jPillar = new JSONObject();
-                jPillar.put(JSONUtils.stripQuotes(myPillarkey), JSONUtils.stripQuotes(myPillarvalue));
+		try {
+		    //If value was already a jsonobject, treat it as such
+		    JSONObject runPillarValue = JSONObject.fromObject(myPillarvalue);
+		    jPillar.put(myPillarkey, runPillarValue);
+		} catch (JSONException e) {
+		    //Otherwise it must have been a string
+		    jPillar.put(JSONUtils.stripQuotes(myPillarkey), JSONUtils.stripQuotes(myPillarvalue));
+		}
 
                 saltFunc.put("pillar", jPillar);
             }

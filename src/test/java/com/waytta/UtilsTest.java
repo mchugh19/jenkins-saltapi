@@ -147,6 +147,16 @@ public class UtilsTest {
         Assert.assertFalse(Utils.validateFunctionCall(jsonArray));
     }
 
+
+    @Test
+    public void testInvalidValidateFunctionCallForDuplicateStateName() {
+        JSONArray jsonArray = JSONArray.fromObject("[{\n" +
+		"\"minionname\": [\"Rendering SLS 'base:orchestration.refresh-apache' failed: Conflicting ID 'setup1'\"]\n" +
+		"}]");
+
+        Assert.assertFalse(Utils.validateFunctionCall(jsonArray));
+    }
+
     @Test
     public void testValidateDockerInitWithArrays() {
         JSONArray jsonArray = JSONArray.fromObject("[{\n" +
