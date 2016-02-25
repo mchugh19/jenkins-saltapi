@@ -205,4 +205,21 @@ public class UtilsTest {
 
 	Assert.assertTrue(Utils.validateFunctionCall(jsonArray));
     }
+ 
+    @Test
+    public void testValidateFunctionCallForEmptyResponse() {
+        JSONArray jsonArray = JSONArray.fromObject("[{}]");
+
+        Assert.assertTrue(Utils.validateFunctionCall(jsonArray));
+    }
+ 
+    @Test
+    public void testValidateFunctionCallForShortEmptyResponse() {
+        JSONArray jsonArray = JSONArray.fromObject("[{\n" +
+	    "\"minion1\":\"\",\n" +
+	    "\"minion2\":\"\"\n" +
+	    "}]");
+
+        Assert.assertTrue(Utils.validateFunctionCall(jsonArray));
+    }
 }

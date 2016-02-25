@@ -248,6 +248,9 @@ public class SaltAPIBuilder extends Builder {
         if (myClientInterface == null) {
             myClientInterface = "local";
         }
+	if (saveEnvVar == null) {
+	    saveEnvVar = false;
+	}
 
         JSONObject saltFunc = prepareSaltFunction(build, listener, myClientInterface, mytarget, myfunction,
                 myarguments, mykwarguments);
@@ -375,6 +378,10 @@ public class SaltAPIBuilder extends Builder {
 		.println("ERROR occurred !\nERROR: One or more minion did not return code 0 for "
 			+ myfunction + " " + myarguments + " for " + mytarget + ":\n"
 			+ returnArray.toString(2));
+	    //Save saltapi output to env if requested
+	    if (saveEnvVar) {
+		build.addAction(new PublishEnvVarAction("SALTBUILDOUTPUT", returnArray.toString()));
+	    }
 	    return false;
 	}
 
