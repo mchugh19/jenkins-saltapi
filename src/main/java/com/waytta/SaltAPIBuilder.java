@@ -32,6 +32,8 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
 import net.sf.json.JSONArray;
+import net.sf.json.JSON;
+import net.sf.json.JSONSerializer;
 import net.sf.json.JSONObject;
 import net.sf.json.util.JSONUtils;
 import net.sf.json.JSONException;
@@ -438,7 +440,7 @@ public class SaltAPIBuilder extends Builder {
                 JSONObject jPillar = new JSONObject();
 		try {
 		    //If value was already a jsonobject, treat it as such
-		    JSONObject runPillarValue = JSONObject.fromObject(myPillarvalue);
+		    JSON runPillarValue = JSONSerializer.toJSON(myPillarvalue);
 		    jPillar.put(myPillarkey, runPillarValue);
 		} catch (JSONException e) {
 		    //Otherwise it must have been a string

@@ -232,4 +232,25 @@ public class UtilsTest {
 
         Assert.assertTrue(Utils.validateFunctionCall(jsonArray));
     }
+
+    @Test
+    public void testValidateFunctionCallForMultiPillar() {
+	JSONArray jsonArray = JSONArray.fromObject("[{\"data\":{\"salt_master\":{\n" +
+		"\"salt_|-DNS_count_|-cmd.run_|-function\":{\"__run_num__\":1,\"changes\":{\n" +
+		"\"out\":\"highstate\",\"ret\":{\"salt\":\"/tmp/count.txt\"}},\n" +
+		"\"comment\":\"Functionransuccessfully.Functioncmd.runranonsalt.\",\"duration\":\"216.56ms\",\"name\":\"cmd.run\",\"result\":true,\"start_time\":\"10:14:19.791039\"},\n" +
+		"\"salt_|-dns_action_|-dns_action_|-state\":{\"__run_num__\":2,\"changes\":{\"out\":\"highstate\",\"ret\":{\"salt\":{\"cmd_|-create_DNS_record_|-echo\\\"DNSRECORDNOTINUSE-PROCEEDTOUPDATEDNS\\\"_|-run\":{\"__run_num__\":1,\"changes\":{\"pid\":2447,\"retcode\":0,\"stderr\":\"\",\"stdout\":\"DNSRECORDNOTINUSE-PROCEEDTOUPDATEDNS\"},\n" +
+		"\"comment\":\"Command\\\"echo\\\"DNSRECORDNOTINUSE-PROCEEDTOUPDATEDNS\\\"\\\"run\",\"duration\":\"4.09ms\",\"name\":\"echo\\\"DNSRECORDNOTINUSE-PROCEEDTOUPDATEDNS\\\"\",\"result\":true,\"start_time\":\"10:14:20.172160\"},\n" +
+		"\"ddns_|-add_dns_host_|-adrian_|-present\":{\"__run_num__\":0,\"changes\":{\"data\":\"10.10.10.18\",\"name\":\"adrian\",\"rdtype\":\"A\",\"ttl\":86400,\"zone\":\"saltlab.int.\"},\n" +
+		"\"comment\":\"UpdatedArecordfor\\\"adrian\\\"\",\"duration\":\"7.328ms\",\"name\":\"adrian\",\"result\":true,\"start_time\":\"10:14:20.164129\"}}}},\n" +
+		"\"comment\":\"Statesransuccessfully.Updatingsalt.\",\"duration\":\"304.499ms\",\"name\":\"dns_action\",\"result\":true,\"start_time\":\"10:14:20.007795\"},\n" +
+		"\"salt_|-list_duplicates_|-list_duplicates_|-state\":{\"__run_num__\":0,\"changes\":{\"out\":\"highstate\",\"ret\":{\"salt\":{\"cmd_|-list_duplicate_hosts_|-/srv/salt/prod/dns/find_dups.sh10.10.10.18saltlab.int.192.168.15.4_|-run\":{\"__run_num__\":0,\n" +
+		"\"changes\":{\"pid\":2399,\"retcode\":0,\"stderr\":\"\",\"stdout\":\"\"},\n" +
+		"\"comment\":\"Command\\\"/srv/salt/prod/dns/find_dups.sh10.10.10.18saltlab.int.192.168.15.4\\\"run\",\"duration\":\"18.112ms\",\"name\":\"/srv/salt/prod/dns/find_dups.sh10.10.10.18saltlab.int.192.168.15.4\",\"result\":true,\"start_time\":\"10:14:19.639361\"}}}},\n" +
+		"\"comment\":\"Statesransuccessfully.Updatingsalt.\",\"duration\":\"293.707ms\",\"name\":\"list_duplicates\",\"result\":true,\"start_time\":\"10:14:19.497222\"}}},\n" +
+		"\"outputter\":\"highstate\"}]");
+
+        Assert.assertTrue(Utils.validateFunctionCall(jsonArray));
+    }
+
 }

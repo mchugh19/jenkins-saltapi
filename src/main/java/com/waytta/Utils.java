@@ -156,6 +156,25 @@ public class Utils {
 		    }
 		}
 
+		//test if normla minion results are a JSONArray which indicates failure
+		//detect errors like "return":[{"data":{"minionname":["Rendering SLS... failed"]}}]
+		if (possibleMinion.has("data")) {
+		    JSONObject minionData = possibleMinion.optJSONObject("data");
+		    if (minionData != null) {
+			for (Object name : minionData.names()) {
+			    Object field = minionData.get(name.toString());
+			    if (field instanceof JSONArray) {
+				result = false;
+
+				if (!result) {
+				    return result;
+				}
+			    }
+			}
+		    }
+		}
+
+		//iterate through subkeys and values to detect failures
                 result = validateInnerJsonObject((JSONObject) o);
                 if (!result) {
                     break;
@@ -168,21 +187,6 @@ public class Utils {
 
     private static boolean validateInnerJsonObject(JSONObject minion) {
         boolean result = true;
-
-	//test if minion results are a JSONArray which indicates failure
-	if (minion.has("data")) {
-	    JSONObject minionData = minion.getJSONObject("data");
-	    for (Object name : minionData.names()) {
-		Object field = minionData.get(name.toString());
-		if (field instanceof JSONArray) {
-		    result = false;
-
-		    if (!result) {
-			return result;
-		    }
-		}
-	    }
-	}
 
         for (Object name : minion.names()) {
             Object field = minion.get(name.toString());
