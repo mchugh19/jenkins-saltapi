@@ -7,7 +7,7 @@
   </parent>
 
   <artifactId>saltstack</artifactId>
-  <version>1.6.2-SNAPSHOT</version>
+  <version>1.7.0-SNAPSHOT</version>
   <packaging>hpi</packaging>
   <name>Jenkins SaltStack plugin</name>
   <description>Allows Jenkins to send SaltStack messages</description>
@@ -45,6 +45,19 @@
       <url>http://oss.sonatype.org/content/groups/public/</url>
     </repository>
   </repositories>
+
+  <build>
+    <plugins>
+      <plugin>
+      <groupId>org.apache.maven.plugins</groupId>
+      <artifactId>maven-surefire-plugin</artifactId>
+      <configuration>
+        <redirectTestOutputToFile>true</redirectTestOutputToFile>
+      </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
 
   <pluginRepositories>
     <pluginRepository>
