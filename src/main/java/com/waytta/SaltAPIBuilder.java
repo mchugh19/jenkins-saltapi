@@ -262,7 +262,7 @@ public class SaltAPIBuilder extends Builder {
         saltArray.add(saltFunc);
 
         if (mySaltMessageDebug) {
-            listener.getLogger().println("Sending JSON: " + saltArray.toString());
+            listener.getLogger().println("[DEBUG] Sending JSON: " + saltArray.toString());
         }
 
         if (myBlockBuild == null) {
@@ -372,6 +372,10 @@ public class SaltAPIBuilder extends Builder {
 	    listener.getLogger().println("Salt reported an error for " + myfunction + " "
 		    + myarguments + " for " + mytarget + ":\n" + returnArray.toString(2));
 	    return false;
+	}
+
+	if (mySaltMessageDebug) {
+	    listener.getLogger().println("[DEBUG] Received response: " + returnArray);
 	}
 
 	boolean validFunctionExecution = Utils.validateFunctionCall(returnArray);
