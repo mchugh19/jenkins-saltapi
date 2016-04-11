@@ -1,9 +1,21 @@
 package com.waytta;
 
+import java.util.Map;
+import java.util.HashMap;
+
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.Before;
 
 import net.sf.json.JSONArray;
+import hudson.model.AbstractBuild;
+import hudson.model.BuildListener;
+import hudson.EnvVars;
+
+import static org.mockito.Mockito.mock;
+import org.mockito.Mock;
+import static org.mockito.Mockito.when;
+
 
 public class UtilsTest {
     @Test
@@ -251,6 +263,33 @@ public class UtilsTest {
 		"\"outputter\":\"highstate\"}]");
 
         Assert.assertTrue(Utils.validateFunctionCall(jsonArray));
+    }
+
+    @Mock
+    BuildListener listenerMock;
+
+    @Mock
+    AbstractBuild jenkinsBuildMock;
+
+    @Before
+    public void setUp() throws Exception {
+        jenkinsBuildMock = mock(AbstractBuild.class);
+        listenerMock = mock(BuildListener.class);
+        Map<String, String> env = new HashMap<String, String>();
+        env.put("WORKINGENVVAR", "true");
+        when(jenkinsBuildMock.getBuildVariables()).thenReturn(env);
+        when(jenkinsBuildMock.getEnvironment(listenerMock)).thenReturn(new EnvVars(env));
+        when(listenerMock.getLogger()).thenReturn(System.out);
+    }
+
+    @Test
+    public void testParamorizeFoundMatch() {
+    	Assert.assertEquals(Utils.paramorize(jenkinsBuildMock, listenerMock, "{{WORKINGENVVAR}}"), "true");
+    }
+
+    @Test
+    public void testParamorizeMissing() {
+    	Assert.assertEquals(Utils.paramorize(jenkinsBuildMock, listenerMock, "{{DOESNOTEXIST}}"), "");
     }
 
 }

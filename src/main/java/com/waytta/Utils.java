@@ -121,7 +121,10 @@ public class Utils {
                 // remove trailing }}
                 replacementVar = replacementVar.substring(0, replacementVar.length() - 2);
                 // using proper env var name, perform a lookup and save value
-                replacementVar = envVars.get(replacementVar);
+                if (envVars.get(replacementVar) == null) {
+                    listener.getLogger().println("Error: Could not find environment variable");
+                }
+                replacementVar = envVars.get(replacementVar, "");
                 paramer = paramer.replace(matcher.group(), replacementVar);
             } catch (IOException e1) {
                 listener.getLogger().println(e1);
