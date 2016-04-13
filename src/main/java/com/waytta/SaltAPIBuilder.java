@@ -23,10 +23,13 @@ import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
 
 import hudson.Extension;
 import hudson.Launcher;
+import hudson.FilePath;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
+import hudson.model.TaskListener;
 import hudson.model.Item;
+import hudson.model.Run;
 import hudson.security.ACL;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
@@ -39,7 +42,7 @@ import net.sf.json.JSONObject;
 import net.sf.json.JSONSerializer;
 import net.sf.json.util.JSONUtils;
 
-public class SaltAPIBuilder extends Builder {
+public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
     private static final Logger LOGGER = Logger.getLogger("com.waytta.saltstack");
 
     private final String servername;
@@ -49,7 +52,7 @@ public class SaltAPIBuilder extends Builder {
     private final String function;
     private String arguments;
     private String kwarguments;
-    private final JSONObject clientInterfaces;
+    private JSONObject clientInterfaces;
     private final String clientInterface;
     private final Boolean blockbuild;
     private final Integer jobPollTime;
@@ -203,9 +206,24 @@ public class SaltAPIBuilder extends Builder {
     }
 
     public Boolean getSaveEnvVar() {
-        return saveEnvVar;
+    	return saveEnvVar;
+    }
+    
+    public JSONObject getClientInterfaces() {
+    	return clientInterfaces;
+    }
+    
+    @DataBoundSetter
+    public void setClientInterfaces(JSONObject clientInterfaces) {
+    	this.clientInterfaces = clientInterfaces;
     }
 
+    
+    @Override
+    public void perform(Run<?, ?> run, FilePath workspace, Launcher launcher, TaskListener listener) throws InterruptedException, IOException{
+    	listener.getLogger().println("Printed from pipeline");
+    }
+    
     @Override
     public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) {
         // This is where you 'build' the project.
