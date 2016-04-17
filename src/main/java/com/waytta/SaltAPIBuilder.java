@@ -596,7 +596,7 @@ public class SaltAPIBuilder extends Builder {
 	    }
 
 	    if (usedCredential == null) {
-		return FormValidation.error("CredentialId error: " + usedCredential);
+		return FormValidation.error("CredentialId error: no credential found with given ID.");
 	    }
 
             if (!servername.matches("\\{\\{\\w+\\}\\}")) {
