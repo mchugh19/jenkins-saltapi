@@ -5,8 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
+import java.util.logging.Level;
 
-import org.apache.log4j.Level;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -263,7 +263,7 @@ public class SaltAPIBuilder extends Builder {
         JSONArray saltArray = new JSONArray();
         saltArray.add(saltFunc);
 
-        LOGGER.log(Level.DEBUG, "Sending JSON: " + saltArray.toString());
+        LOGGER.log(Level.FINE, "Sending JSON: " + saltArray.toString());
         
 
         if (myBlockBuild == null) {
@@ -372,7 +372,7 @@ public class SaltAPIBuilder extends Builder {
             return false;
         }
 
-        LOGGER.log(Level.DEBUG, "Received response: " + returnArray);
+        LOGGER.log(Level.FINE, "Received response: " + returnArray);
 
 
         boolean validFunctionExecution = Utils.validateFunctionCall(returnArray);
