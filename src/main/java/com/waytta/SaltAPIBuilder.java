@@ -5,38 +5,37 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.yaml.snakeyaml.Yaml;
-
-import com.cloudbees.plugins.credentials.CredentialsProvider;
-import com.cloudbees.plugins.credentials.CredentialsMatchers;
-import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
-import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
-import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
-import com.cloudbees.plugins.credentials.domains.DomainRequirement;
-import jenkins.model.Jenkins;
-import hudson.security.ACL;
-import hudson.model.Item;
-
+import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
-import org.kohsuke.stapler.AncestorInPath;
+import org.yaml.snakeyaml.Yaml;
+
+import com.cloudbees.plugins.credentials.CredentialsMatchers;
+import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
+import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
+import com.cloudbees.plugins.credentials.domains.DomainRequirement;
+import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
 
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
+import hudson.model.Item;
+import hudson.security.ACL;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
-import net.sf.json.JSONArray;
+import jenkins.model.Jenkins;
 import net.sf.json.JSON;
-import net.sf.json.JSONSerializer;
-import net.sf.json.JSONObject;
-import net.sf.json.util.JSONUtils;
+import net.sf.json.JSONArray;
 import net.sf.json.JSONException;
+import net.sf.json.JSONObject;
+import net.sf.json.JSONSerializer;
+import net.sf.json.util.JSONUtils;
 
 public class SaltAPIBuilder extends Builder {
 
@@ -60,10 +59,12 @@ public class SaltAPIBuilder extends Builder {
     private String credentialsId;
     private Boolean saveEnvVar;
 
-    // Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
+    // Fields in config.jelly must match the parameter names in the
+    // "DataBoundConstructor"
     @DataBoundConstructor
-    public SaltAPIBuilder(String servername, String authtype, String target, String targettype, String function, JSONObject clientInterfaces, String mods, String pillarkey, String pillarvalue, String credentialsId) {
-	this.credentialsId = credentialsId;
+    public SaltAPIBuilder(String servername, String authtype, String target, String targettype, String function,
+            JSONObject clientInterfaces, String mods, String pillarkey, String pillarvalue, String credentialsId) {
+        this.credentialsId = credentialsId;
         this.servername = servername;
         this.authtype = authtype;
         this.target = target;
@@ -96,8 +97,7 @@ public class SaltAPIBuilder extends Builder {
             if (clientInterfaces.has("usePillar")) {
                 this.usePillar = true;
                 this.pillarkey = clientInterfaces.getJSONObject("usePillar").get("pillarkey").toString();
-                this.pillarvalue = clientInterfaces.getJSONObject("usePillar").get("pillarvalue")
-                        .toString();
+                this.pillarvalue = clientInterfaces.getJSONObject("usePillar").get("pillarvalue").toString();
             } else {
                 this.usePillar = false;
                 this.pillarkey = "";
@@ -200,7 +200,7 @@ public class SaltAPIBuilder extends Builder {
     }
 
     public Boolean getSaveEnvVar() {
-	return saveEnvVar;
+        return saveEnvVar;
     }
 
     @Override
@@ -225,18 +225,18 @@ public class SaltAPIBuilder extends Builder {
         String mykwarguments = Utils.paramorize(build, listener, kwarguments);
         Boolean myBlockBuild = blockbuild;
 
-	StandardUsernamePasswordCredentials credential = getCredentialById(getCredentialsId());
-	if (credential == null) {
-	    listener.error("Invalid credentials");
-	    return true;
-	}
+        StandardUsernamePasswordCredentials credential = getCredentialById(getCredentialsId());
+        if (credential == null) {
+            listener.error("Invalid credentials");
+            return true;
+        }
 
         // Setup connection for auth
         String token = new String();
         JSONArray authArray = createAuthArray(credential);
         // listener.getLogger().println("Sending auth: "+authArray.toString());
         JSONObject httpResponse = new JSONObject();
-	JSONArray returnArray = new JSONArray();
+        JSONArray returnArray = new JSONArray();
 
         // Get an auth token
         token = Utils.getToken(myservername, authArray);
@@ -251,12 +251,12 @@ public class SaltAPIBuilder extends Builder {
         if (myClientInterface == null) {
             myClientInterface = "local";
         }
-	if (saveEnvVar == null) {
-	    saveEnvVar = false;
-	}
+        if (saveEnvVar == null) {
+            saveEnvVar = false;
+        }
 
-        JSONObject saltFunc = prepareSaltFunction(build, listener, myClientInterface, mytarget, myfunction,
-                myarguments, mykwarguments);
+        JSONObject saltFunc = prepareSaltFunction(build, listener, myClientInterface, mytarget, myfunction, myarguments,
+                mykwarguments);
 
         JSONArray saltArray = new JSONArray();
         saltArray.add(saltFunc);
@@ -285,9 +285,8 @@ public class SaltAPIBuilder extends Builder {
                 // Print out success
                 listener.getLogger().println("Running jid: " + jid);
             } catch (Exception e) {
-                listener.getLogger()
-                        .println("Problem: " + myfunction + " " + myarguments + " to " + myservername
-                                + " for " + mytarget + ":\n" + e + "\n\n" + httpResponse.toString(2));
+                listener.getLogger().println("Problem: " + myfunction + " " + myarguments + " to " + myservername
+                        + " for " + mytarget + ":\n" + e + "\n\n" + httpResponse.toString(2));
                 return false;
             }
 
@@ -316,9 +315,8 @@ public class SaltAPIBuilder extends Builder {
                 }
                 listener.getLogger().println(numMinionsDone + " minions are done");
             } catch (Exception e) {
-                listener.getLogger()
-                        .println("Problem: " + myfunction + " " + myarguments + " to " + myservername
-                                + " for " + mytarget + ":\n" + e + "\n\n" + httpResponse.toString(2));
+                listener.getLogger().println("Problem: " + myfunction + " " + myarguments + " to " + myservername
+                        + " for " + mytarget + ":\n" + e + "\n\n" + httpResponse.toString(2));
                 return false;
             }
 
@@ -327,8 +325,8 @@ public class SaltAPIBuilder extends Builder {
             if (numMinionsDone < numMinions) {
                 // Don't print annying messages unless we really are waiting for
                 // more minions to return
-                listener.getLogger().println(
-                        "Will check status every " + String.valueOf(myJobPollTime) + " seconds...");
+                listener.getLogger()
+                        .println("Will check status every " + String.valueOf(myJobPollTime) + " seconds...");
             }
             while (numMinionsDone < numMinions) {
                 try {
@@ -344,9 +342,8 @@ public class SaltAPIBuilder extends Builder {
                     returnArray = httpResponse.getJSONArray("return");
                     numMinionsDone = returnArray.getJSONObject(0).names().size();
                 } catch (Exception e) {
-                    listener.getLogger()
-                            .println("Problem: " + myfunction + " " + myarguments + " for " + mytarget
-                                    + ":\n" + e + "\n\n" + httpResponse.toString(2).split("\\\\n")[0]);
+                    listener.getLogger().println("Problem: " + myfunction + " " + myarguments + " for " + mytarget
+                            + ":\n" + e + "\n\n" + httpResponse.toString(2).split("\\\\n")[0]);
                     return false;
                 }
             }
@@ -354,65 +351,62 @@ public class SaltAPIBuilder extends Builder {
             // Just send a salt request. Don't wait for reply
             httpResponse = Utils.getJSON(myservername, saltArray, token);
             try {
-		returnArray = httpResponse.getJSONArray("return");
+                returnArray = httpResponse.getJSONArray("return");
                 if (!httpResponse.getJSONArray("return").isArray()) {
                     // Print problem
-                    listener.getLogger().println("Problem on " + myfunction + " " + myarguments + " for "
-                            + mytarget + ":\n" + httpResponse.toString(2));
+                    listener.getLogger().println("Problem on " + myfunction + " " + myarguments + " for " + mytarget
+                            + ":\n" + httpResponse.toString(2));
                     return false;
                 }
             } catch (Exception e) {
-                listener.getLogger().println("Problem with " + myfunction + " " + myarguments + " for "
-                        + mytarget + ":\n" + e + "\n\n" + httpResponse.toString(2).split("\\\\n")[0]);
+                listener.getLogger().println("Problem with " + myfunction + " " + myarguments + " for " + mytarget
+                        + ":\n" + e + "\n\n" + httpResponse.toString(2).split("\\\\n")[0]);
                 return false;
             }
         }
-	//Done sending message. Check for error and print out results
-	if (returnArray.get(0).toString().contains("TypeError")) {
-	    listener.getLogger().println("Salt reported an error for " + myfunction + " "
-		    + myarguments + " for " + mytarget + ":\n" + returnArray.toString(2));
-	    return false;
-	}
+        // Done sending message. Check for error and print out results
+        if (returnArray.get(0).toString().contains("TypeError")) {
+            listener.getLogger().println("Salt reported an error for " + myfunction + " " + myarguments + " for "
+                    + mytarget + ":\n" + returnArray.toString(2));
+            return false;
+        }
 
-	if (mySaltMessageDebug) {
-	    listener.getLogger().println("[DEBUG] Received response: " + returnArray);
-	}
+        if (mySaltMessageDebug) {
+            listener.getLogger().println("[DEBUG] Received response: " + returnArray);
+        }
 
-	boolean validFunctionExecution = Utils.validateFunctionCall(returnArray);
+        boolean validFunctionExecution = Utils.validateFunctionCall(returnArray);
 
-	if (!validFunctionExecution) {
-	    listener.getLogger()
-		.println("ERROR occurred !\nERROR: One or more minion did not return code 0 for "
-			+ myfunction + " " + myarguments + " for " + mytarget + ":\n"
-			+ returnArray.toString(2));
-	    //Save saltapi output to env if requested
-	    if (saveEnvVar) {
-		build.addAction(new PublishEnvVarAction("SALTBUILDOUTPUT", returnArray.toString()));
-	    }
-	    return false;
-	}
+        if (!validFunctionExecution) {
+            listener.getLogger().println("ERROR occurred !\nERROR: One or more minion did not return code 0 for "
+                    + myfunction + " " + myarguments + " for " + mytarget + ":\n" + returnArray.toString(2));
+            // Save saltapi output to env if requested
+            if (saveEnvVar) {
+                build.addAction(new PublishEnvVarAction("SALTBUILDOUTPUT", returnArray.toString()));
+            }
+            return false;
+        }
 
-	// Loop is done. We have heard back from everybody. Good work team!
-	listener.getLogger().println("Response on " + myfunction + " " + myarguments + " for "
-		+ mytarget + ":");
-	if (myOutputFormat.equals("json")) {
-	    listener.getLogger().println(returnArray.toString(2));
-	} else if (myOutputFormat.equals("yaml")) {
-	    Object outputObject = returnArray.toArray();
-	    Yaml yaml = new Yaml();
-	    listener.getLogger().println(yaml.dump(outputObject));
-	} else {
-	    listener.getLogger().println("Error: Unknown output Format: x" + myOutputFormat + "x");
-	    return false;
-	}
+        // Loop is done. We have heard back from everybody. Good work team!
+        listener.getLogger().println("Response on " + myfunction + " " + myarguments + " for " + mytarget + ":");
+        if (myOutputFormat.equals("json")) {
+            listener.getLogger().println(returnArray.toString(2));
+        } else if (myOutputFormat.equals("yaml")) {
+            Object outputObject = returnArray.toArray();
+            Yaml yaml = new Yaml();
+            listener.getLogger().println(yaml.dump(outputObject));
+        } else {
+            listener.getLogger().println("Error: Unknown output Format: x" + myOutputFormat + "x");
+            return false;
+        }
 
-        //Save saltapi output to env if requested
-	if (saveEnvVar) {
-	    build.addAction(new PublishEnvVarAction("SALTBUILDOUTPUT", returnArray.toString()));
-	}
+        // Save saltapi output to env if requested
+        if (saveEnvVar) {
+            build.addAction(new PublishEnvVarAction("SALTBUILDOUTPUT", returnArray.toString()));
+        }
 
-	// No fail condition reached. Must be good.
-	return true;
+        // No fail condition reached. Must be good.
+        return true;
     }
 
     private JSONArray createAuthArray(StandardUsernamePasswordCredentials credential) {
@@ -442,14 +436,14 @@ public class SaltAPIBuilder extends Builder {
                 String myPillarvalue = Utils.paramorize(build, listener, pillarvalue);
 
                 JSONObject jPillar = new JSONObject();
-		try {
-		    //If value was already a jsonobject, treat it as such
-		    JSON runPillarValue = JSONSerializer.toJSON(myPillarvalue);
-		    jPillar.put(myPillarkey, runPillarValue);
-		} catch (JSONException e) {
-		    //Otherwise it must have been a string
-		    jPillar.put(JSONUtils.stripQuotes(myPillarkey), JSONUtils.stripQuotes(myPillarvalue));
-		}
+                try {
+                    // If value was already a jsonobject, treat it as such
+                    JSON runPillarValue = JSONSerializer.toJSON(myPillarvalue);
+                    jPillar.put(myPillarkey, runPillarValue);
+                } catch (JSONException e) {
+                    // Otherwise it must have been a string
+                    jPillar.put(JSONUtils.stripQuotes(myPillarkey), JSONUtils.stripQuotes(myPillarvalue));
+                }
 
                 saltFunc.put("pillar", jPillar);
             }
@@ -480,8 +474,9 @@ public class SaltAPIBuilder extends Builder {
                         String kwFull = new String();
                         for (String kwItem : kwString) {
                             // Ignore the first item as it will remain the key
-                            if (kwItem == kwString[0])
+                            if (kwItem == kwString[0]) {
                                 continue;
+                            }
                             // add the second item
                             if (kwItem == kwString[1]) {
                                 kwFull += kwItem;
@@ -502,19 +497,20 @@ public class SaltAPIBuilder extends Builder {
     }
 
     StandardUsernamePasswordCredentials getCredentialById(String credentialId) {
-	List<StandardUsernamePasswordCredentials> credentials = getCredentials(Jenkins.getInstance());
-	for (StandardUsernamePasswordCredentials credential : credentials) {
-	    if (credential.getId().equals(credentialId)) {
-		return credential;
-	    }
-	}
-	return null;
+        List<StandardUsernamePasswordCredentials> credentials = getCredentials(Jenkins.getInstance());
+        for (StandardUsernamePasswordCredentials credential : credentials) {
+            if (credential.getId().equals(credentialId)) {
+                return credential;
+            }
+        }
+        return null;
     }
 
     static List<StandardUsernamePasswordCredentials> getCredentials(Jenkins context) {
         List<DomainRequirement> requirements = URIRequirementBuilder.create().build();
-	List<StandardUsernamePasswordCredentials> credentials = CredentialsProvider.lookupCredentials(StandardUsernamePasswordCredentials.class, context, ACL.SYSTEM, requirements);
-	return credentials;
+        List<StandardUsernamePasswordCredentials> credentials = CredentialsProvider
+                .lookupCredentials(StandardUsernamePasswordCredentials.class, context, ACL.SYSTEM, requirements);
+        return credentials;
     }
 
     private void addArgumentsToSaltFunction(String myarguments, JSONObject saltFunc) {
@@ -526,7 +522,8 @@ public class SaltAPIBuilder extends Builder {
             for (String arg : argItems) {
                 // remove spaces at begining or end
                 arg = arg.replaceAll("^\\s+|\\s+$", "");
-                // if string wrapped in quotes, remove them since adding to list re-quotes
+                // if string wrapped in quotes, remove them since adding to list
+                // re-quotes
                 arg = arg.replaceAll("(^')|(^\")|('$)|(\"$)", "");
                 saltArguments.add(arg);
             }
@@ -541,13 +538,14 @@ public class SaltAPIBuilder extends Builder {
     // you don't have to do this.
     @Override
     public DescriptorImpl getDescriptor() {
-        return (DescriptorImpl)super.getDescriptor();
+        return (DescriptorImpl) super.getDescriptor();
     }
 
-    @Extension // This indicates to Jenkins that this is an implementation of an extension point.
+    @Extension // This indicates to Jenkins that this is an implementation of an
+               // extension point.
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
 
-	private int pollTime = 10;
+        private int pollTime = 10;
         private boolean saltMessageDebug;
         private String outputFormat = "json";
 
@@ -582,22 +580,20 @@ public class SaltAPIBuilder extends Builder {
             return outputFormat;
         }
 
-        public FormValidation doTestConnection(
-	        @QueryParameter String servername,
-	        @QueryParameter String credentialsId,
-	        @QueryParameter String authtype) {
-	    StandardUsernamePasswordCredentials usedCredential = null;
-	    List<StandardUsernamePasswordCredentials> credentials = getCredentials(Jenkins.getInstance());
-	    for (StandardUsernamePasswordCredentials credential : credentials) {
-		if (credential.getId().equals(credentialsId)) {
-		    usedCredential = credential;
-		    break;
-		}
-	    }
+        public FormValidation doTestConnection(@QueryParameter String servername, @QueryParameter String credentialsId,
+                @QueryParameter String authtype) {
+            StandardUsernamePasswordCredentials usedCredential = null;
+            List<StandardUsernamePasswordCredentials> credentials = getCredentials(Jenkins.getInstance());
+            for (StandardUsernamePasswordCredentials credential : credentials) {
+                if (credential.getId().equals(credentialsId)) {
+                    usedCredential = credential;
+                    break;
+                }
+            }
 
-	    if (usedCredential == null) {
-		return FormValidation.error("CredentialId error: no credential found with given ID.");
-	    }
+            if (usedCredential == null) {
+                return FormValidation.error("CredentialId error: no credential found with given ID.");
+            }
 
             if (!servername.matches("\\{\\{\\w+\\}\\}")) {
                 JSONArray authArray = new JSONArray();
@@ -617,57 +613,60 @@ public class SaltAPIBuilder extends Builder {
             return FormValidation.warning("Cannot expand parametrized server name.");
         }
 
-	public StandardListBoxModel doFillCredentialsIdItems(
-		@AncestorInPath Jenkins context, 
-		@QueryParameter final String servername) {
-	    StandardListBoxModel result = new StandardListBoxModel();
-	    result.withEmptySelection();
-	    result.withMatching(CredentialsMatchers.instanceOf(StandardUsernamePasswordCredentials.class), getCredentials(context));
-	    return result;
-	}
+        public StandardListBoxModel doFillCredentialsIdItems(@AncestorInPath Jenkins context,
+                @QueryParameter final String servername) {
+            StandardListBoxModel result = new StandardListBoxModel();
+            result.withEmptySelection();
+            result.withMatching(CredentialsMatchers.instanceOf(StandardUsernamePasswordCredentials.class),
+                    getCredentials(context));
+            return result;
+        }
 
         public FormValidation doCheckServername(@QueryParameter String value) {
             if (!value.matches("\\{\\{\\w+\\}\\}")) {
-                if (value.length() == 0)
+                if (value.length() == 0) {
                     return FormValidation.error("Please specify a name");
-                if (value.length() < 10)
+                }
+                if (value.length() < 10) {
                     return FormValidation.warning("Isn't the name too short?");
-                if (!value.contains("https://") && !value.contains("http://"))
-                    return FormValidation.warning(
-                            "Missing protocol: Servername should be in the format https://host.domain:8000");
-                if (!value.substring(7).contains(":"))
-                    return FormValidation.warning(
-                            "Missing port: Servername should be in the format https://host.domain:8000");
+                }
+                if (!value.contains("https://") && !value.contains("http://")) {
+                    return FormValidation
+                            .warning("Missing protocol: Servername should be in the format https://host.domain:8000");
+                }
+                if (!value.substring(7).contains(":")) {
+                    return FormValidation
+                            .warning("Missing port: Servername should be in the format https://host.domain:8000");
+                }
                 return FormValidation.ok();
             }
 
             return FormValidation.warning("Cannot expand parametrized server name.");
         }
 
-	public FormValidation doCheckCredentialsId(@AncestorInPath Item project, @QueryParameter String value) {
-	    if (project == null || !project.hasPermission(Item.CONFIGURE)) {
-		return FormValidation.ok();
-	    }
+        public FormValidation doCheckCredentialsId(@AncestorInPath Item project, @QueryParameter String value) {
+            if (project == null || !project.hasPermission(Item.CONFIGURE)) {
+                return FormValidation.ok();
+            }
 
-	    if (value == null) {
-		return FormValidation.ok();
-	    }
+            if (value == null) {
+                return FormValidation.ok();
+            }
 
-	    StandardUsernamePasswordCredentials usedCredential = null;
-	    List<StandardUsernamePasswordCredentials> credentials = getCredentials(Jenkins.getInstance());
-	    for (StandardUsernamePasswordCredentials credential : credentials) {
-		if (credential.getId().equals(value)) {
-		    usedCredential = credential;
-		}
-	    }
+            StandardUsernamePasswordCredentials usedCredential = null;
+            List<StandardUsernamePasswordCredentials> credentials = getCredentials(Jenkins.getInstance());
+            for (StandardUsernamePasswordCredentials credential : credentials) {
+                if (credential.getId().equals(value)) {
+                    usedCredential = credential;
+                }
+            }
 
-	    if (usedCredential == null) {
-		return FormValidation.error("Cannot find any credentials with id " + value);
-	    }
+            if (usedCredential == null) {
+                return FormValidation.error("Cannot find any credentials with id " + value);
+            }
 
-	    return FormValidation.ok();
-	}
-
+            return FormValidation.ok();
+        }
 
         public FormValidation doCheckTarget(@QueryParameter String value) {
             return validateFormStringField(value, "Please specify a salt target", "Isn't it too short?");
@@ -677,7 +676,8 @@ public class SaltAPIBuilder extends Builder {
             return validateFormStringField(value, "Please specify a salt function", "Isn't it too short?");
         }
 
-        private FormValidation validateFormStringField(String value, String lackOfFieldMessage, String fieldToShortMessage) {
+        private FormValidation validateFormStringField(String value, String lackOfFieldMessage,
+                String fieldToShortMessage) {
             if (value.length() == 0) {
                 return FormValidation.error(lackOfFieldMessage);
             }

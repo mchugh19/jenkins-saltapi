@@ -142,47 +142,51 @@ public class Utils {
 
         for (Object o : returnArray) {
             if (o instanceof Boolean) {
-		result = (Boolean) o;
-	    } else if (o instanceof String){
-		result = false;
-	    } else {
-		//detect errors like "return":[{"minionname":["Rendering SLS... failed"]}]
-		JSONObject possibleMinion = JSONObject.fromObject(o);
-		for (Object name : possibleMinion.names()) {
-		    Object field = possibleMinion.get(name.toString());
-		    if (field instanceof JSONArray) {
-			result = false;
+                result = (Boolean) o;
+            } else if (o instanceof String) {
+                result = false;
+            } else {
+                // detect errors like "return":[{"minionname":["Rendering SLS...
+                // failed"]}]
+                JSONObject possibleMinion = JSONObject.fromObject(o);
+                for (Object name : possibleMinion.names()) {
+                    Object field = possibleMinion.get(name.toString());
+                    if (field instanceof JSONArray) {
+                        result = false;
 
-			if (!result) {
-			    return result;
-			}
-		    }
-		}
+                        if (!result) {
+                            return result;
+                        }
+                    }
+                }
 
-		//test if normla minion results are a JSONArray which indicates failure
-		//detect errors like "return":[{"data":{"minionname":["Rendering SLS... failed"]}}]
-		if (possibleMinion.has("data")) {
-		    JSONObject minionData = possibleMinion.optJSONObject("data");
-		    if (minionData != null) {
-			for (Object name : minionData.names()) {
-			    Object field = minionData.get(name.toString());
-			    if (field instanceof JSONArray) {
-				result = false;
+                // test if normla minion results are a JSONArray which indicates
+                // failure
+                // detect errors like
+                // "return":[{"data":{"minionname":["Rendering SLS...
+                // failed"]}}]
+                if (possibleMinion.has("data")) {
+                    JSONObject minionData = possibleMinion.optJSONObject("data");
+                    if (minionData != null) {
+                        for (Object name : minionData.names()) {
+                            Object field = minionData.get(name.toString());
+                            if (field instanceof JSONArray) {
+                                result = false;
 
-				if (!result) {
-				    return result;
-				}
-			    }
-			}
-		    }
-		}
+                                if (!result) {
+                                    return result;
+                                }
+                            }
+                        }
+                    }
+                }
 
-		//iterate through subkeys and values to detect failures
+                // iterate through subkeys and values to detect failures
                 result = validateInnerJsonObject((JSONObject) o);
                 if (!result) {
                     break;
                 }
-	    }
+            }
         }
 
         return result;
@@ -197,7 +201,7 @@ public class Utils {
             if (field instanceof JSONObject) {
                 JSONObject jsonObject = (JSONObject) field;
 
-		//test if cmd.run return is non zero
+                // test if cmd.run return is non zero
                 if (jsonObject.has(RETCODE_FIELD_NAME)) {
                     result = jsonObject.getInt(RETCODE_FIELD_NAME) == 0;
 
@@ -206,7 +210,7 @@ public class Utils {
                     }
                 }
 
-		//test if result is false
+                // test if result is false
                 if (jsonObject.has("result")) {
                     result = jsonObject.getBoolean("result");
 
