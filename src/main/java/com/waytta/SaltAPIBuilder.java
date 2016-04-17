@@ -591,6 +591,7 @@ public class SaltAPIBuilder extends Builder {
 	    for (StandardUsernamePasswordCredentials credential : credentials) {
 		if (credential.getId().equals(credentialsId)) {
 		    usedCredential = credential;
+		    break;
 		}
 	    }
 
