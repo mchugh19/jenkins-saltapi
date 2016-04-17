@@ -4,7 +4,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
+import org.apache.log4j.Level;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -38,6 +40,7 @@ import net.sf.json.JSONSerializer;
 import net.sf.json.util.JSONUtils;
 
 public class SaltAPIBuilder extends Builder {
+    private static final Logger LOGGER = Logger.getLogger("com.waytta.saltstack");
 
     private final String servername;
     private final String authtype;
@@ -215,7 +218,6 @@ public class SaltAPIBuilder extends Builder {
             myJobPollTime = jobPollTime;
         }
 
-        Boolean mySaltMessageDebug = getDescriptor().getSaltMessageDebug();
         String myOutputFormat = getDescriptor().getOutputFormat();
         String myClientInterface = clientInterface;
         String myservername = Utils.paramorize(build, listener, servername);
@@ -261,9 +263,8 @@ public class SaltAPIBuilder extends Builder {
         JSONArray saltArray = new JSONArray();
         saltArray.add(saltFunc);
 
-        if (mySaltMessageDebug) {
-            listener.getLogger().println("[DEBUG] Sending JSON: " + saltArray.toString());
-        }
+        LOGGER.log(Level.DEBUG, "Sending JSON: " + saltArray.toString());
+        
 
         if (myBlockBuild == null) {
             // Set a sane default if uninitialized
@@ -371,9 +372,8 @@ public class SaltAPIBuilder extends Builder {
             return false;
         }
 
-        if (mySaltMessageDebug) {
-            listener.getLogger().println("[DEBUG] Received response: " + returnArray);
-        }
+        LOGGER.log(Level.DEBUG, "Received response: " + returnArray);
+
 
         boolean validFunctionExecution = Utils.validateFunctionCall(returnArray);
 
@@ -546,7 +546,6 @@ public class SaltAPIBuilder extends Builder {
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
 
         private int pollTime = 10;
-        private boolean saltMessageDebug;
         private String outputFormat = "json";
 
         public DescriptorImpl() {
@@ -562,7 +561,6 @@ public class SaltAPIBuilder extends Builder {
                 // Fall back to default
                 pollTime = 10;
             }
-            saltMessageDebug = formData.getBoolean("saltMessageDebug");
             outputFormat = formData.getString("outputFormat");
             save();
             return super.configure(req, formData);
@@ -570,10 +568,6 @@ public class SaltAPIBuilder extends Builder {
 
         public int getPollTime() {
             return pollTime;
-        }
-
-        public boolean getSaltMessageDebug() {
-            return saltMessageDebug;
         }
 
         public String getOutputFormat() {

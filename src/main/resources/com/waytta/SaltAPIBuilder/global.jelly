@@ -7,10 +7,6 @@
       <f:textbox default="120" value="${instance.pollTime}" />
     </f:entry>
 
-    <f:entry title="JSON Debug" description="Toggles display of json data being submitted to saltAPI">
-      <f:checkbox name="saltMessageDebug" checked="${instance.saltMessageDebug}"/>
-    </f:entry>
-
     <f:entry title="Display format" description="Configure display of SaltAPI response">
       <select name="outputFormat">
         <f:option value="json" selected="${instance.outputFormat == 'json'}">json</f:option>
