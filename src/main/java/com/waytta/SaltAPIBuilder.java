@@ -377,18 +377,9 @@ public class SaltAPIBuilder extends Builder {
 
         boolean validFunctionExecution = Utils.validateFunctionCall(returnArray);
 
-        if (!validFunctionExecution) {
-            listener.getLogger().println("ERROR occurred !\nERROR: One or more minion did not return code 0 for "
-                    + myfunction + " " + myarguments + " for " + mytarget + ":\n" + returnArray.toString(2));
-            // Save saltapi output to env if requested
-            if (saveEnvVar) {
-                build.addAction(new PublishEnvVarAction("SALTBUILDOUTPUT", returnArray.toString()));
-            }
-            return false;
-        }
-
         // Loop is done. We have heard back from everybody. Good work team!
-        listener.getLogger().println("Response on " + myfunction + " " + myarguments + " for " + mytarget + ":");
+        listener.getLogger().println("Response on " + myfunction + " " + myarguments + " for "
+                + mytarget + ":");
         if (myOutputFormat.equals("json")) {
             listener.getLogger().println(returnArray.toString(2));
         } else if (myOutputFormat.equals("yaml")) {
@@ -508,8 +499,7 @@ public class SaltAPIBuilder extends Builder {
 
     static List<StandardUsernamePasswordCredentials> getCredentials(Jenkins context) {
         List<DomainRequirement> requirements = URIRequirementBuilder.create().build();
-        List<StandardUsernamePasswordCredentials> credentials = CredentialsProvider
-                .lookupCredentials(StandardUsernamePasswordCredentials.class, context, ACL.SYSTEM, requirements);
+(??)	List<StandardUsernamePasswordCredentials> credentials = CredentialsProvider.lookupCredentials(StandardUsernamePasswordCredentials.class, context, ACL.SYSTEM, requirements);
         return credentials;
     }
 
@@ -574,7 +564,9 @@ public class SaltAPIBuilder extends Builder {
             return outputFormat;
         }
 
-        public FormValidation doTestConnection(@QueryParameter String servername, @QueryParameter String credentialsId,
+        public FormValidation doTestConnection(
+                @QueryParameter String servername,
+                @QueryParameter String credentialsId,
                 @QueryParameter String authtype) {
             StandardUsernamePasswordCredentials usedCredential = null;
             List<StandardUsernamePasswordCredentials> credentials = getCredentials(Jenkins.getInstance());
@@ -607,7 +599,8 @@ public class SaltAPIBuilder extends Builder {
             return FormValidation.warning("Cannot expand parametrized server name.");
         }
 
-        public StandardListBoxModel doFillCredentialsIdItems(@AncestorInPath Jenkins context,
+        public StandardListBoxModel doFillCredentialsIdItems(
+                @AncestorInPath Jenkins context,
                 @QueryParameter final String servername) {
             StandardListBoxModel result = new StandardListBoxModel();
             result.withEmptySelection();
