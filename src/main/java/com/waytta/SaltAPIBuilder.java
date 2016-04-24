@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.logging.Logger;
 import java.util.logging.Level;
 
-import com.waytta.clientinterface.AbstractClientInterface;
+import com.waytta.clientinterface.BasicClient;
 import com.waytta.clientinterface.LocalBatchClient;
 import com.waytta.clientinterface.LocalClient;
 import com.waytta.clientinterface.RunnerClient;
@@ -59,7 +59,7 @@ public class SaltAPIBuilder extends Builder {
     private String credentialsId;
     private Boolean saveEnvVar;
 
-    private AbstractClientInterface clientInterface;
+    private BasicClient clientInterface;
 
     // Fields in config.jelly must match the parameter names in the
     // "DataBoundConstructor"
@@ -84,6 +84,9 @@ public class SaltAPIBuilder extends Builder {
             case "runner":
                 clientInterface = new RunnerClient(credentialsId, servername, authtype, target, targettype, function, clientInterfaces.get("mods").toString(), clientInterfaces);
                 break;
+            
+            default:
+                clientInterface = new BasicClient(credentialsId, servername, authtype, target, targettype, function);
         }
     }
 
