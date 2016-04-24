@@ -6,20 +6,20 @@ import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
-import hudson.model.Descriptor;
 import hudson.security.ACL;
-import hudson.tasks.Builder;
+import hudson.util.Secret;
 import jenkins.model.Jenkins;
+import net.sf.json.JSON;
+import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.Describable;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
-import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -29,24 +29,29 @@ import static java.lang.Boolean.TRUE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
 import static org.powermock.api.mockito.PowerMockito.mock;
 import static org.powermock.api.mockito.PowerMockito.mockStatic;
 import static org.powermock.api.mockito.PowerMockito.when;
 
 @RunWith(PowerMockRunner.class)
-@PrepareForTest({JSONObject.class, Jenkins.class, SaltAPIBuilder.DescriptorImpl.class, CredentialsProvider.class})
+@PrepareForTest({JSONObject.class, Jenkins.class, SaltAPIBuilder.DescriptorImpl.class, CredentialsProvider.class, Utils.class})
 public class SaltAPIBuilderTest {
 
-    private static final java.lang.Integer TESTINT = (int)(new Date().getTime());
+    private static final Integer TESTINT = (int)(new Date().getTime());
     private static final Integer TEN = new Integer(10);
+    private static final String DEFAULT_CREDENTIAL_ID = "credentials_id";
+    private static final hudson.util.Secret DEFAULT_CREDENTIAL_PASSWORD = Secret.fromString("junit_password");
     JSONObject clientInterfaces;
-
+    private List<StandardUsernamePasswordCredentials> credentials;
 
 
     @Before
     public void setup(){
-        clientInterfaces = mock(JSONObject.class);
+        clientInterfaces = mock(JSONObject.class);                                          
         when(clientInterfaces.has("clientInterface")).thenReturn(TRUE);
+        credentials = new ArrayList<StandardUsernamePasswordCredentials>();
     }
     
     @Test
@@ -156,31 +161,81 @@ public class SaltAPIBuilderTest {
                 "mods",
                 "pillarkey",
                 "pillarvalue",
-                "credentialsId");
+                DEFAULT_CREDENTIAL_ID);
     }
 
     @Test
-    public void testPerform() throws Exception {
-        when(clientInterfaces.get("clientInterface")).thenReturn("JUNIT");
+    public void testPerformWithNoCredentials() throws Exception {
+        SaltAPIBuilder builder = setupBuilderForDefaultPerform();
         AbstractBuild jenkinsBuild = mock(AbstractBuild.class);
+        Launcher launcher = mock(Launcher.class);
+        BuildListener buildListener = mock(BuildListener.class);
+        
+        assertTrue(builder.perform(jenkinsBuild, launcher, buildListener));
+    }
+    
+    @Test
+    public void testPerformWithFailingCredentials() throws Exception {
+        StandardUsernamePasswordCredentials mockCred = mock(StandardUsernamePasswordCredentials.class);
+        when(mockCred.getId()).thenReturn(DEFAULT_CREDENTIAL_ID);
+        when(mockCred.getPassword()).thenReturn(DEFAULT_CREDENTIAL_PASSWORD);
+        credentials.add(mockCred);
+        
+        SaltAPIBuilder builder = setupBuilderForDefaultPerform();
+        
+        BuildListener buildListener = mock(BuildListener.class);
+        PrintStream printer = mock(PrintStream.class);
+        when(buildListener.getLogger()).thenReturn(printer);
+
+        AbstractBuild jenkinsBuild = mock(AbstractBuild.class);
+        Launcher launcher = mock(Launcher.class);
+        assertFalse(builder.perform(jenkinsBuild, launcher, buildListener));
+    }
+
+    @Test
+    public void testPerformWithPassingCredentials() throws Exception {
+        StandardUsernamePasswordCredentials mockCred = mock(StandardUsernamePasswordCredentials.class);
+        when(mockCred.getId()).thenReturn(DEFAULT_CREDENTIAL_ID);
+        when(mockCred.getPassword()).thenReturn(DEFAULT_CREDENTIAL_PASSWORD);
+        credentials.add(mockCred);
+
+        SaltAPIBuilder builder = setupBuilderForDefaultPerform();
+        mockStatic(Utils.class);
+        when(Utils.getToken(anyString(), any(JSONArray.class))).thenReturn("okie_dokie");
+
+        BuildListener buildListener = mock(BuildListener.class);
+        PrintStream printer = mock(PrintStream.class);
+        when(buildListener.getLogger()).thenReturn(printer);
+
+        AbstractBuild jenkinsBuild = mock(AbstractBuild.class);
+        Launcher launcher = mock(Launcher.class);
+        when(Utils.paramorize(jenkinsBuild, buildListener, builder.getTarget())).thenReturn("junit_mytarget");
+        when(Utils.paramorize(jenkinsBuild, buildListener, builder.getFunction())).thenReturn("junit_myfunction");
+        when(Utils.paramorize(jenkinsBuild, buildListener, builder.getArguments())).thenReturn("junit_myarguments");
+        when(Utils.paramorize(jenkinsBuild, buildListener, builder.getKwarguments())).thenReturn("junit_mykwarguments");
+        JSONObject httpResponse = mock(JSONObject.class);
+        when(httpResponse.toString(2)).thenReturn("junit_httpResponse");
+        when(Utils.getJSON(anyString(), any(JSONArray.class),anyString())).thenReturn(httpResponse);
+        assertTrue(builder.perform(jenkinsBuild, launcher, buildListener));
+    }
+    private SaltAPIBuilder setupBuilderForDefaultPerform() {
+
+        when(clientInterfaces.get("clientInterface")).thenReturn("JUNIT");
         SaltAPIBuilder.DescriptorImpl descriptor = mock(SaltAPIBuilder.DescriptorImpl.class);
         mockStatic(Jenkins.class);
         Jenkins jenkins = mock(Jenkins.class);
         when(Jenkins.getInstance()).thenReturn(jenkins);
-        when(jenkins.getDescriptorOrDie((Class<? extends hudson.model.Describable>) Mockito.any())).thenReturn(descriptor);
+        when(jenkins.getDescriptorOrDie((Class<? extends hudson.model.Describable>) any())).thenReturn(descriptor);
 
-        
+
         mockStatic(CredentialsProvider.class);
         when(CredentialsProvider.lookupCredentials(
-                StandardUsernamePasswordCredentials.class, jenkins, ACL.SYSTEM, new ArrayList<DomainRequirement>())).thenReturn(new ArrayList<StandardUsernamePasswordCredentials>());;
-        
-        Launcher launcher = mock(Launcher.class);
-        BuildListener buildListener = mock(BuildListener.class);
-        
+                StandardUsernamePasswordCredentials.class, jenkins, ACL.SYSTEM, new ArrayList<DomainRequirement>())).thenReturn(credentials);;
+
         SaltAPIBuilder builder = build();
         builder.setArguments("junit arguments");
         builder.setKwarguments("junit kwarguments");
-        assertTrue(builder.perform(jenkinsBuild, launcher, buildListener));
+        
+        return builder;
     }
-    
 }

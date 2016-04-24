@@ -170,15 +170,7 @@ public class SaltAPIBuilder extends Builder {
     @Override
     public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) {
         // This is where you 'build' the project.
-
-        // If not not configured, grab the default
-        int myJobPollTime = 10;
-        if (clientInterface.getJobPollTime()== null) {
-            myJobPollTime = getDescriptor().getPollTime();
-        } else {
-            myJobPollTime = clientInterface.getJobPollTime();
-        }
-
+        
         Boolean mySaltMessageDebug = getDescriptor().getSaltMessageDebug();
         String myOutputFormat = getDescriptor().getOutputFormat();
         String myClientInterface = clientInterfaceName;
@@ -292,11 +284,11 @@ public class SaltAPIBuilder extends Builder {
                 // Don't print annying messages unless we really are waiting for
                 // more minions to return
                 listener.getLogger().println(
-                        "Will check status every " + String.valueOf(myJobPollTime) + " seconds...");
+                        "Will check status every " + clientInterface.getJobPollTime() + " seconds...");
             }
             while (numMinionsDone < numMinions) {
                 try {
-                    Thread.sleep(myJobPollTime * 1000);
+                    Thread.sleep(clientInterface.getJobPollTime() * 1000);
                 } catch (InterruptedException ex) {
                     Thread.currentThread().interrupt();
                     // Allow user to cancel job in jenkins interface
