@@ -112,4 +112,7 @@ public class BasicClient {
         this.batchSize = batchSize;
     }
 
+    public String getCredentialsId() {
+        return credentialsId;
+    }
 }

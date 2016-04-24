@@ -48,7 +48,6 @@ public class SaltAPIBuilder extends Builder {
     private String kwarguments;
     private final String clientInterfaceName;
 
-    private String credentialsId;
     private Boolean saveEnvVar;
 
     private BasicClient clientInterface;
@@ -156,7 +155,7 @@ public class SaltAPIBuilder extends Builder {
     }
 
     public String getCredentialsId() {
-        return credentialsId;
+        return clientInterface.getCredentialsId();
     }
 
     @DataBoundSetter
