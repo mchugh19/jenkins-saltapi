@@ -251,7 +251,7 @@ public class SaltAPIBuilder extends Builder {
             } catch (Exception e) {
                 listener.getLogger()
                         .println("Problem: " + myfunction + " " + myarguments + " to " + myservername
-                                + " for " + mytarget + ":\n" + e + "\n\n" + httpResponse.toString(2));
+                        + " for " + mytarget + ":\n" + e + "\n\n" + httpResponse.toString(2));
                 return false;
             }
 
@@ -282,7 +282,7 @@ public class SaltAPIBuilder extends Builder {
             } catch (Exception e) {
                 listener.getLogger()
                         .println("Problem: " + myfunction + " " + myarguments + " to " + myservername
-                                + " for " + mytarget + ":\n" + e + "\n\n" + httpResponse.toString(2));
+                        + " for " + mytarget + ":\n" + e + "\n\n" + httpResponse.toString(2));
                 return false;
             }
 
@@ -310,7 +310,7 @@ public class SaltAPIBuilder extends Builder {
                 } catch (Exception e) {
                     listener.getLogger()
                             .println("Problem: " + myfunction + " " + myarguments + " for " + mytarget
-                                    + ":\n" + e + "\n\n" + httpResponse.toString(2).split("\\\\n")[0]);
+                            + ":\n" + e + "\n\n" + httpResponse.toString(2).split("\\\\n")[0]);
                     return false;
                 }
             }
@@ -331,7 +331,7 @@ public class SaltAPIBuilder extends Builder {
                 return false;
             }
         }
-        //Done sending message. Check for error and print out results
+        // Done sending message. Check for error and print out results
         if (returnArray.get(0).toString().contains("TypeError")) {
             listener.getLogger().println("Salt reported an error for " + myfunction + " "
                     + myarguments + " for " + mytarget + ":\n" + returnArray.toString(2));
@@ -349,7 +349,7 @@ public class SaltAPIBuilder extends Builder {
                     .println("ERROR occurred !\nERROR: One or more minion did not return code 0 for "
                             + myfunction + " " + myarguments + " for " + mytarget + ":\n"
                             + returnArray.toString(2));
-            //Save saltapi output to env if requested
+            // Save saltapi output to env if requested
             if (saveEnvVar) {
                 build.addAction(new PublishEnvVarAction("SALTBUILDOUTPUT", returnArray.toString()));
             }
@@ -370,7 +370,7 @@ public class SaltAPIBuilder extends Builder {
             return false;
         }
 
-        //Save saltapi output to env if requested
+        // Save saltapi output to env if requested
         if (saveEnvVar) {
             build.addAction(new PublishEnvVarAction("SALTBUILDOUTPUT", returnArray.toString()));
         }
@@ -406,14 +406,14 @@ public class SaltAPIBuilder extends Builder {
                 String myPillarvalue = Utils.paramorize(build, listener, clientInterface.getPillarValue());
 
                 JSONObject jPillar = new JSONObject();
-                try {
-                    //If value was already a jsonobject, treat it as such
-                    JSON runPillarValue = JSONSerializer.toJSON(myPillarvalue);
-                    jPillar.put(myPillarkey, runPillarValue);
-                } catch (JSONException e) {
-                    //Otherwise it must have been a string
-                    jPillar.put(JSONUtils.stripQuotes(myPillarkey), JSONUtils.stripQuotes(myPillarvalue));
-                }
+		try {
+		    //If value was already a jsonobject, treat it as such
+		    JSON runPillarValue = JSONSerializer.toJSON(myPillarvalue);
+		    jPillar.put(myPillarkey, runPillarValue);
+		} catch (JSONException e) {
+		    //Otherwise it must have been a string
+		    jPillar.put(JSONUtils.stripQuotes(myPillarkey), JSONUtils.stripQuotes(myPillarvalue));
+		}
 
                 saltFunc.put("pillar", jPillar);
             }
@@ -477,8 +477,8 @@ public class SaltAPIBuilder extends Builder {
 
     static List<StandardUsernamePasswordCredentials> getCredentials(Jenkins context) {
         List<DomainRequirement> requirements = URIRequirementBuilder.create().build();
-        List<StandardUsernamePasswordCredentials> credentials = CredentialsProvider.lookupCredentials(StandardUsernamePasswordCredentials.class, context, ACL.SYSTEM, requirements);
-        return credentials;
+	List<StandardUsernamePasswordCredentials> credentials = CredentialsProvider.lookupCredentials(StandardUsernamePasswordCredentials.class, context, ACL.SYSTEM, requirements);
+	return credentials;
     }
 
     private void addArgumentsToSaltFunction(String myarguments, JSONObject saltFunc) {
@@ -555,11 +555,12 @@ public class SaltAPIBuilder extends Builder {
             for (StandardUsernamePasswordCredentials credential : credentials) {
                 if (credential.getId().equals(credentialsId)) {
                     usedCredential = credential;
+                    break;
                 }
             }
 
             if (usedCredential == null) {
-                return FormValidation.error("CredentialId error: " + usedCredential);
+                return FormValidation.error("CredentialId error: no credential found with given ID.");
             }
 
             if (!servername.matches("\\{\\{\\w+\\}\\}")) {
@@ -591,16 +592,20 @@ public class SaltAPIBuilder extends Builder {
 
         public FormValidation doCheckServername(@QueryParameter String value) {
             if (!value.matches("\\{\\{\\w+\\}\\}")) {
-                if (value.length() == 0)
+                if (value.length() == 0) {
                     return FormValidation.error("Please specify a name");
-                if (value.length() < 10)
+                }
+                if (value.length() < 10) {
                     return FormValidation.warning("Isn't the name too short?");
-                if (!value.contains("https://") && !value.contains("http://"))
-                    return FormValidation.warning(
-                            "Missing protocol: Servername should be in the format https://host.domain:8000");
-                if (!value.substring(7).contains(":"))
-                    return FormValidation.warning(
-                            "Missing port: Servername should be in the format https://host.domain:8000");
+                }
+                if (!value.contains("https://") && !value.contains("http://")) {
+                    return FormValidation
+                            .warning("Missing protocol: Servername should be in the format https://host.domain:8000");
+                }
+                if (!value.substring(7).contains(":")) {
+                    return FormValidation
+                            .warning("Missing port: Servername should be in the format https://host.domain:8000");
+                }
                 return FormValidation.ok();
             }
 
@@ -630,7 +635,6 @@ public class SaltAPIBuilder extends Builder {
 
             return FormValidation.ok();
         }
-
 
         public FormValidation doCheckTarget(@QueryParameter String value) {
             return validateFormStringField(value, "Please specify a salt target", "Isn't it too short?");
