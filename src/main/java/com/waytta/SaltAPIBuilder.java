@@ -74,7 +74,7 @@ public class SaltAPIBuilder extends Builder {
             case "runner":
                 clientInterface = new RunnerClient(credentialsId, servername, authtype, target, targettype, function, clientInterfaces.get("mods").toString(), clientInterfaces);
                 break;
-            
+
             default:
                 clientInterface = new BasicClient(credentialsId, servername, authtype, target, targettype, function);
         }

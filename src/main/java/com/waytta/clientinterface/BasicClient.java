@@ -5,6 +5,7 @@ package com.waytta.clientinterface;
  */
 public class BasicClient {
 
+    public static final int DEFAULT_JOB_POLL_TIME = 10;
     private final String credentialsId;
     private final String serverName;
     private final String authType;
@@ -18,7 +19,7 @@ public class BasicClient {
     private String pillarkey = "";
     private String pillarvalue = "";
     private Boolean blockBuild = Boolean.FALSE;
-    private Integer jobPollTime = new Integer(10);
+    private Integer jobPollTime = DEFAULT_JOB_POLL_TIME;
 
 
     public BasicClient(String credentialsId, String servername, String authType, String target, String targetType, String function) {

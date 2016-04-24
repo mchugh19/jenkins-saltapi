@@ -1,23 +1,40 @@
 package com.waytta;
 
+import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
+import com.cloudbees.plugins.credentials.domains.DomainRequirement;
+import hudson.Launcher;
+import hudson.model.AbstractBuild;
+import hudson.model.BuildListener;
+import hudson.model.Descriptor;
+import hudson.security.ACL;
+import hudson.tasks.Builder;
+import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.Describable;
 import org.junit.runner.RunWith;
+import org.mockito.Mockito;
+import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.powermock.api.mockito.PowerMockito.mock;
+import static org.powermock.api.mockito.PowerMockito.mockStatic;
 import static org.powermock.api.mockito.PowerMockito.when;
 
 @RunWith(PowerMockRunner.class)
-@PrepareForTest({JSONObject.class})
+@PrepareForTest({JSONObject.class, Jenkins.class, SaltAPIBuilder.DescriptorImpl.class, CredentialsProvider.class})
 public class SaltAPIBuilderTest {
 
     private static final java.lang.Integer TESTINT = (int)(new Date().getTime());
@@ -78,7 +95,6 @@ public class SaltAPIBuilderTest {
         SaltAPIBuilder builder = build();
         validateBuilder(builder, "local", TESTINT); 
     }
-
 
     private void validateBuilder(SaltAPIBuilder builder,
                                  String clientInterfaces,
@@ -142,4 +158,29 @@ public class SaltAPIBuilderTest {
                 "pillarvalue",
                 "credentialsId");
     }
+
+    @Test
+    public void testPerform() throws Exception {
+        when(clientInterfaces.get("clientInterface")).thenReturn("JUNIT");
+        AbstractBuild jenkinsBuild = mock(AbstractBuild.class);
+        SaltAPIBuilder.DescriptorImpl descriptor = mock(SaltAPIBuilder.DescriptorImpl.class);
+        mockStatic(Jenkins.class);
+        Jenkins jenkins = mock(Jenkins.class);
+        when(Jenkins.getInstance()).thenReturn(jenkins);
+        when(jenkins.getDescriptorOrDie((Class<? extends hudson.model.Describable>) Mockito.any())).thenReturn(descriptor);
+
+        
+        mockStatic(CredentialsProvider.class);
+        when(CredentialsProvider.lookupCredentials(
+                StandardUsernamePasswordCredentials.class, jenkins, ACL.SYSTEM, new ArrayList<DomainRequirement>())).thenReturn(new ArrayList<StandardUsernamePasswordCredentials>());;
+        
+        Launcher launcher = mock(Launcher.class);
+        BuildListener buildListener = mock(BuildListener.class);
+        
+        SaltAPIBuilder builder = build();
+        builder.setArguments("junit arguments");
+        builder.setKwarguments("junit kwarguments");
+        assertTrue(builder.perform(jenkinsBuild, launcher, buildListener));
+    }
+    
 }
