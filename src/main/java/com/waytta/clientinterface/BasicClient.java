@@ -3,7 +3,7 @@ package com.waytta.clientinterface;
 /**
  * Created by esmalling on 4/24/16.
  */
-public abstract class AbstractClientInterface {
+public class BasicClient {
 
     private final String credentialsId;
     private final String serverName;
@@ -13,20 +13,19 @@ public abstract class AbstractClientInterface {
     private final String function;
     private String batchSize;
 
-    private String mods;
-    private Boolean usePillar;
-    private String pillarkey;
+    private String mods = "";
+    private Boolean usePillar = Boolean.FALSE;
+    private String pillarkey = "";
+    private String pillarvalue = "";
+    private Boolean blockBuild = Boolean.FALSE;
+    private Integer jobPollTime = new Integer(10);
 
-    private String pillarvalue;
-    private Boolean blockBuild;
-    private Integer jobPollTime;
 
-
-    public AbstractClientInterface(String credentialsId, String servername, String authType, String target, String targetType, String function) {
+    public BasicClient(String credentialsId, String servername, String authType, String target, String targetType, String function) {
         this(credentialsId, servername, authType, target, targetType, function, "100%");
     }
 
-    public AbstractClientInterface(String credentialsId, String servername, String authType, String target, String targetType, String function, String batchSize) {
+    public BasicClient(String credentialsId, String servername, String authType, String target, String targetType, String function, String batchSize) {
         this.credentialsId = credentialsId;
         this.serverName = servername;
         this.authType = authType;
