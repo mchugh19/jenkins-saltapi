@@ -5,6 +5,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.waytta.clientinterface.AbstractClientInterface;
+import com.waytta.clientinterface.LocalBatchClient;
+import com.waytta.clientinterface.LocalClient;
+import com.waytta.clientinterface.RunnerClient;
 import org.yaml.snakeyaml.Yaml;
 
 import com.cloudbees.plugins.credentials.CredentialsProvider;
@@ -40,80 +44,37 @@ import net.sf.json.JSONException;
 
 public class SaltAPIBuilder extends Builder {
 
-    private final String servername;
-    private final String authtype;
-    private final String target;
-    private final String targettype;
-    private final String function;
     private String arguments;
     private String kwarguments;
-    private final JSONObject clientInterfaces;
-    private final String clientInterface;
-    private final Boolean blockbuild;
-    private final Integer jobPollTime;
-    private final String batchSize;
-    private final String mods;
-    private final Boolean usePillar;
-    private final String pillarkey;
-    private final String pillarvalue;
+    private final String clientInterfaceName;
 
     private String credentialsId;
     private Boolean saveEnvVar;
 
+    private AbstractClientInterface clientInterface;
+
     // Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
     @DataBoundConstructor
     public SaltAPIBuilder(String servername, String authtype, String target, String targettype, String function, JSONObject clientInterfaces, String mods, String pillarkey, String pillarvalue, String credentialsId) {
-        this.credentialsId = credentialsId;
-        this.servername = servername;
-        this.authtype = authtype;
-        this.target = target;
-        this.targettype = targettype;
-        this.function = function;
-        this.clientInterfaces = clientInterfaces;
+
         if (clientInterfaces.has("clientInterface")) {
-            this.clientInterface = clientInterfaces.get("clientInterface").toString();
+            this.clientInterfaceName = clientInterfaces.get("clientInterface").toString();
         } else {
-            this.clientInterface = "local";
+            this.clientInterfaceName = "local";
         }
-        if (clientInterface.equals("local")) {
-            this.blockbuild = clientInterfaces.getBoolean("blockbuild");
-            this.jobPollTime = clientInterfaces.getInt("jobPollTime");
-            this.batchSize = "100%";
-            this.mods = "";
-            this.usePillar = false;
-            this.pillarkey = "";
-            this.pillarvalue = "";
-        } else if (clientInterface.equals("local_batch")) {
-            this.batchSize = clientInterfaces.get("batchSize").toString();
-            this.blockbuild = false;
-            this.jobPollTime = 10;
-            this.mods = "";
-            this.usePillar = false;
-            this.pillarkey = "";
-            this.pillarvalue = "";
-        } else if (clientInterface.equals("runner")) {
-            this.mods = clientInterfaces.get("mods").toString();
-            if (clientInterfaces.has("usePillar")) {
-                this.usePillar = true;
-                this.pillarkey = clientInterfaces.getJSONObject("usePillar").get("pillarkey").toString();
-                this.pillarvalue = clientInterfaces.getJSONObject("usePillar").get("pillarvalue")
-                        .toString();
-            } else {
-                this.usePillar = false;
-                this.pillarkey = "";
-                this.pillarvalue = "";
-            }
-            this.blockbuild = false;
-            this.jobPollTime = 10;
-            this.batchSize = "100%";
-        } else {
-            this.batchSize = "100%";
-            this.blockbuild = false;
-            this.jobPollTime = 10;
-            this.mods = "";
-            this.usePillar = false;
-            this.pillarkey = "";
-            this.pillarvalue = "";
+
+        switch (clientInterfaceName) {
+            case "local":
+                clientInterface = new LocalClient(credentialsId, servername, authtype, target, targettype, function, clientInterfaces.getBoolean("blockbuild"), clientInterfaces.getInt("jobPollTime"));
+                break;
+
+            case "local_batch":
+                clientInterface = new LocalBatchClient(credentialsId, servername, authtype, target, targettype, function, clientInterfaces.get("batchSize").toString());
+                break;
+
+            case "runner":
+                clientInterface = new RunnerClient(credentialsId, servername, authtype, target, targettype, function, clientInterfaces.get("mods").toString(), clientInterfaces);
+                break;
         }
     }
 
@@ -121,23 +82,23 @@ public class SaltAPIBuilder extends Builder {
      * We'll use this from the <tt>config.jelly</tt>.
      */
     public String getServername() {
-        return servername;
+        return clientInterface.getServerName();
     }
 
     public String getAuthtype() {
-        return authtype;
+        return clientInterface.getAuthType();
     }
 
     public String getTarget() {
-        return target;
+        return clientInterface.getTarget();
     }
 
     public String getTargettype() {
-        return this.targettype;
+        return clientInterface.getTargetType();
     }
 
     public String getFunction() {
-        return function;
+        return clientInterface.getFunction();
     }
 
     public String getArguments() {
@@ -159,35 +120,36 @@ public class SaltAPIBuilder extends Builder {
     }
 
     public String getClientInterface() {
-        return clientInterface;
+        return clientInterfaceName;
     }
 
     public Boolean getBlockbuild() {
-        return blockbuild;
+        return clientInterface.getBlockBuild();
     }
 
     public String getBatchSize() {
-        return batchSize;
+        return clientInterface.getBatchSize();
     }
 
     public Integer getJobPollTime() {
-        return jobPollTime;
+        return clientInterface.getJobPollTime();
     }
 
     public String getMods() {
-        return mods;
+
+        return clientInterface.getMods();
     }
 
     public Boolean getUsePillar() {
-        return usePillar;
+        return clientInterface.getUsePillar();
     }
 
     public String getPillarkey() {
-        return pillarkey;
+        return clientInterface.getPillarKey();
     }
 
     public String getPillarvalue() {
-        return pillarvalue;
+        return clientInterface.getPillarValue();
     }
 
     public String getCredentialsId() {
@@ -209,21 +171,21 @@ public class SaltAPIBuilder extends Builder {
 
         // If not not configured, grab the default
         int myJobPollTime = 10;
-        if (jobPollTime == null) {
+        if (clientInterface.getJobPollTime()== null) {
             myJobPollTime = getDescriptor().getPollTime();
         } else {
-            myJobPollTime = jobPollTime;
+            myJobPollTime = clientInterface.getJobPollTime();
         }
 
         Boolean mySaltMessageDebug = getDescriptor().getSaltMessageDebug();
         String myOutputFormat = getDescriptor().getOutputFormat();
-        String myClientInterface = clientInterface;
-        String myservername = Utils.paramorize(build, listener, servername);
-        String mytarget = Utils.paramorize(build, listener, target);
-        String myfunction = Utils.paramorize(build, listener, function);
+        String myClientInterface = clientInterfaceName;
+        String myservername = Utils.paramorize(build, listener, clientInterface.getServerName());
+        String mytarget = Utils.paramorize(build, listener, clientInterface.getTarget());
+        String myfunction = Utils.paramorize(build, listener, clientInterface.getFunction());
         String myarguments = Utils.paramorize(build, listener, arguments);
         String mykwarguments = Utils.paramorize(build, listener, kwarguments);
-        Boolean myBlockBuild = blockbuild;
+        Boolean myBlockBuild = clientInterface.getBlockBuild();
 
         StandardUsernamePasswordCredentials credential = getCredentialById(getCredentialsId());
         if (credential == null) {
@@ -420,7 +382,7 @@ public class SaltAPIBuilder extends Builder {
         JSONObject auth = new JSONObject();
         auth.put("username", credential.getUsername());
         auth.put("password", credential.getPassword().getPlainText());
-        auth.put("eauth", authtype);
+        auth.put("eauth", clientInterface.getAuthType());
         authArray.add(auth);
 
         return authArray;
@@ -431,15 +393,15 @@ public class SaltAPIBuilder extends Builder {
         JSONObject saltFunc = new JSONObject();
         saltFunc.put("client", myClientInterface);
         if (myClientInterface.equals("local_batch")) {
-            saltFunc.put("batch", batchSize);
-            listener.getLogger().println("Running in batch mode. Batch size: " + batchSize);
+            saltFunc.put("batch", clientInterface.getBatchSize());
+            listener.getLogger().println("Running in batch mode. Batch size: " + clientInterface.getBatchSize());
         }
         if (myClientInterface.equals("runner")) {
-            saltFunc.put("mods", mods);
+            saltFunc.put("mods", clientInterface.getMods());
 
-            if (usePillar) {
-                String myPillarkey = Utils.paramorize(build, listener, pillarkey);
-                String myPillarvalue = Utils.paramorize(build, listener, pillarvalue);
+            if (clientInterface.getUsePillar()) {
+                String myPillarkey = Utils.paramorize(build, listener, clientInterface.getPillarKey());
+                String myPillarvalue = Utils.paramorize(build, listener, clientInterface.getPillarValue());
 
                 JSONObject jPillar = new JSONObject();
                 try {
@@ -455,7 +417,7 @@ public class SaltAPIBuilder extends Builder {
             }
         }
         saltFunc.put("tgt", mytarget);
-        saltFunc.put("expr_form", targettype);
+        saltFunc.put("expr_form", clientInterface.getTargetType());
         saltFunc.put("fun", myfunction);
         addArgumentsToSaltFunction(myarguments, saltFunc);
         addKwArgumentsToSaltFunction(mykwarguments, saltFunc);
