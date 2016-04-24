@@ -9,15 +9,15 @@
   </f:entry>
 
 
-  <f:entry title="Auth Type" field="authtype">
-    <select name="authtype">
-      <f:option value="pam" selected="${instance.authtype == 'pam'}">pam</f:option>
-      <f:option value="ldap" selected="${instance.authtype == 'ldap'}">ldap</f:option>
+  <f:entry title="Auth Type" field="authType">
+    <select name="authType">
+      <f:option value="pam" selected="${instance.authType == 'pam'}">pam</f:option>
+      <f:option value="ldap" selected="${instance.authType == 'ldap'}">ldap</f:option>
     </select>
   </f:entry>
   <f:validateButton
    title="${%Test Connection}" progress="${%Testing...}"
-   method="testConnection" with="servername,credentialsId,authtype" />
+   method="testConnection" with="servername,credentialsId,authType" />
 
   <f:dropdownList name="clientInterfaces" title="Client Interface">
     <f:dropdownListBlock title="local" value="local" selected="${instance.clientInterface == 'local'}">
@@ -34,16 +34,16 @@
   <f:entry title="Target" field="target">
     <f:textbox />
   </f:entry>
-  <f:entry title="Target Type" field="targettype">
-    <select name="targettype">
-      <f:option value="glob" selected="${instance.targettype == 'glob'}">glob</f:option>
-      <f:option value="pcre" selected="${instance.targettype == 'pcre'}">pcre</f:option>
-      <f:option value="list" selected="${instance.targettype == 'list'}">list</f:option>
-      <f:option value="grain" selected="${instance.targettype == 'grain'}">grain</f:option>
-      <f:option value="pillar" selected="${instance.targettype == 'pillar'}">pillar</f:option>
-      <f:option value="nodegroup" selected="${instance.targettype == 'nodegroup'}">nodegroup</f:option>
-      <f:option value="range" selected="${instance.targettype == 'range'}">range</f:option>
-      <f:option value="compound" selected="${instance.targettype == 'compound'}">compound</f:option>
+  <f:entry title="Target Type" field="targetType">
+    <select name="targetType">
+      <f:option value="glob" selected="${instance.targetType == 'glob'}">glob</f:option>
+      <f:option value="pcre" selected="${instance.targetType == 'pcre'}">pcre</f:option>
+      <f:option value="list" selected="${instance.targetType == 'list'}">list</f:option>
+      <f:option value="grain" selected="${instance.targetType == 'grain'}">grain</f:option>
+      <f:option value="pillar" selected="${instance.targetType == 'pillar'}">pillar</f:option>
+      <f:option value="nodegroup" selected="${instance.targetType == 'nodegroup'}">nodegroup</f:option>
+      <f:option value="range" selected="${instance.targetType == 'range'}">range</f:option>
+      <f:option value="compound" selected="${instance.targetType == 'compound'}">compound</f:option>
     </select>
   </f:entry>
 
