@@ -179,15 +179,7 @@ public class SaltAPIBuilder extends Builder {
     @Override
     public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) {
         // This is where you 'build' the project.
-
-        // If not not configured, grab the default
-        int myJobPollTime = 10;
-        if (clientInterface.getJobPollTime()== null) {
-            myJobPollTime = getDescriptor().getPollTime();
-        } else {
-            myJobPollTime = clientInterface.getJobPollTime();
-        }
-
+        
         String myOutputFormat = getDescriptor().getOutputFormat();
         String myClientInterface = clientInterfaceName;
         String myservername = Utils.paramorize(build, listener, clientInterface.getServerName());
@@ -258,7 +250,7 @@ public class SaltAPIBuilder extends Builder {
             } catch (Exception e) {
                 listener.getLogger()
                         .println("Problem: " + myfunction + " " + myarguments + " to " + myservername
-                                + " for " + mytarget + ":\n" + e + "\n\n" + httpResponse.toString(2));
+                        + " for " + mytarget + ":\n" + e + "\n\n" + httpResponse.toString(2));
                 return false;
             }
 
@@ -289,7 +281,7 @@ public class SaltAPIBuilder extends Builder {
             } catch (Exception e) {
                 listener.getLogger()
                         .println("Problem: " + myfunction + " " + myarguments + " to " + myservername
-                                + " for " + mytarget + ":\n" + e + "\n\n" + httpResponse.toString(2));
+                        + " for " + mytarget + ":\n" + e + "\n\n" + httpResponse.toString(2));
                 return false;
             }
 
@@ -299,11 +291,11 @@ public class SaltAPIBuilder extends Builder {
                 // Don't print annying messages unless we really are waiting for
                 // more minions to return
                 listener.getLogger().println(
-                        "Will check status every " + String.valueOf(myJobPollTime) + " seconds...");
+                        "Will check status every " + clientInterface.getJobPollTime() + " seconds...");
             }
             while (numMinionsDone < numMinions) {
                 try {
-                    Thread.sleep(myJobPollTime * 1000);
+                    Thread.sleep(clientInterface.getJobPollTime() * 1000);
                 } catch (InterruptedException ex) {
                     Thread.currentThread().interrupt();
                     // Allow user to cancel job in jenkins interface
@@ -317,7 +309,7 @@ public class SaltAPIBuilder extends Builder {
                 } catch (Exception e) {
                     listener.getLogger()
                             .println("Problem: " + myfunction + " " + myarguments + " for " + mytarget
-                                    + ":\n" + e + "\n\n" + httpResponse.toString(2).split("\\\\n")[0]);
+                            + ":\n" + e + "\n\n" + httpResponse.toString(2).split("\\\\n")[0]);
                     return false;
                 }
             }
@@ -355,7 +347,7 @@ public class SaltAPIBuilder extends Builder {
                     .println("ERROR occurred !\nERROR: One or more minion did not return code 0 for "
                             + myfunction + " " + myarguments + " for " + mytarget + ":\n"
                             + returnArray.toString(2));
-            //Save saltapi output to env if requested
+            // Save saltapi output to env if requested
             if (saveEnvVar) {
                 build.addAction(new PublishEnvVarAction("SALTBUILDOUTPUT", returnArray.toString()));
             }
