@@ -43,6 +43,7 @@ public class SaltAPIBuilderTest {
     private static final Integer TEN = new Integer(10);
     private static final String DEFAULT_CREDENTIAL_ID = "credentials_id";
     private static final hudson.util.Secret DEFAULT_CREDENTIAL_PASSWORD = Secret.fromString("junit_password");
+    private static final String JSON_FORMAT = "json";
     JSONObject clientInterfaces;
     private List<StandardUsernamePasswordCredentials> credentials;
 
@@ -214,11 +215,21 @@ public class SaltAPIBuilderTest {
         when(Utils.paramorize(jenkinsBuild, buildListener, builder.getArguments())).thenReturn("junit_myarguments");
         when(Utils.paramorize(jenkinsBuild, buildListener, builder.getKwarguments())).thenReturn("junit_mykwarguments");
         JSONObject httpResponse = mock(JSONObject.class);
-        when(httpResponse.toString(2)).thenReturn("junit_httpResponse");
         when(Utils.getJSON(anyString(), any(JSONArray.class),anyString())).thenReturn(httpResponse);
+        when(httpResponse.toString(2)).thenReturn("junit_httpResponse");
+        JSONArray returnArray = new JSONArray();
+        returnArray.add(0,"junit");
+        when(httpResponse.getJSONArray("return")).thenReturn(returnArray);
+        when(Utils.validateFunctionCall(returnArray)).thenReturn(true);
+        
         assertTrue(builder.perform(jenkinsBuild, launcher, buildListener));
     }
+
     private SaltAPIBuilder setupBuilderForDefaultPerform() {
+        return setupBuilderForDefaultPerform(JSON_FORMAT);
+    }
+
+    private SaltAPIBuilder setupBuilderForDefaultPerform(String outputFormat) {
 
         when(clientInterfaces.get("clientInterface")).thenReturn("JUNIT");
         SaltAPIBuilder.DescriptorImpl descriptor = mock(SaltAPIBuilder.DescriptorImpl.class);
@@ -226,7 +237,7 @@ public class SaltAPIBuilderTest {
         Jenkins jenkins = mock(Jenkins.class);
         when(Jenkins.getInstance()).thenReturn(jenkins);
         when(jenkins.getDescriptorOrDie((Class<? extends hudson.model.Describable>) any())).thenReturn(descriptor);
-
+        when(descriptor.getOutputFormat()).thenReturn(outputFormat);
 
         mockStatic(CredentialsProvider.class);
         when(CredentialsProvider.lookupCredentials(
