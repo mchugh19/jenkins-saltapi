@@ -7,7 +7,7 @@
   </parent>
 
   <artifactId>saltstack</artifactId>
-  <version>1.7.2-SNAPSHOT</version>
+  <version>1.7.1</version>
   <packaging>hpi</packaging>
   <name>Jenkins SaltStack plugin</name>
   <description>Allows Jenkins to send SaltStack messages</description>
@@ -23,7 +23,7 @@
     <connection>scm:git:ssh://github.com/jenkinsci/saltstack-plugin.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/jenkinsci/saltstack-plugin.git</developerConnection>
     <url>https://github.com/jenkinsci/saltstack-plugin</url>
-    <tag>HEAD</tag>
+    <tag>saltstack-1.7.1</tag>
   </scm>
 
   <developers>
