@@ -59,7 +59,7 @@
     <f:textbox />
   </f:entry>
 
-  <f:entry title="Save output to environment variable" field="saveEnvVar" description="Save Salt return into environment variable SALTBUILDOUPUT">
+  <f:entry title="Save output to environment variable" field="saveEnvVar" description="Save Salt return into environment variable SALTBUILDOUTPUT">
     <f:checkbox />
   </f:entry>
 
