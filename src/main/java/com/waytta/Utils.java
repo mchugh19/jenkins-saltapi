@@ -160,7 +160,7 @@ public class Utils {
                     }
                 }
 
-                // test if normla minion results are a JSONArray which indicates
+                // test if normal minion results are a JSONArray which indicates
                 // failure
                 // detect errors like
                 // "return":[{"data":{"minionname":["Rendering SLS...
@@ -212,6 +212,12 @@ public class Utils {
 
                 // test if result is false
                 if (jsonObject.has("result")) {
+                    //detect where test=True and results key is "null"
+                    //See test testHighStateChangesTest
+                    if (jsonObject.get("result").equals("null")) {
+                        //deteced null result, skipping
+                        break;
+                    }
                     result = jsonObject.getBoolean("result");
 
                     if (!result) {

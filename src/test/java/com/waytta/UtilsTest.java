@@ -264,6 +264,25 @@ public class UtilsTest {
 
         Assert.assertTrue(Utils.validateFunctionCall(jsonArray));
     }
+    
+    @Test
+    public void testHighStateChangesTest() {
+    JSONArray jsonArray = JSONArray.fromObject("[{" +
+    "\"web1\": {" +
+        "\"file_|-manage ssh_known_hosts file_|-/etc/ssh/ssh_known_hosts_|-managed\": {" +
+            "\"comment\": \"The file /etc/ssh/ssh_known_hosts is set to be changed\"," +
+            "\"name\": \"/etc/ssh/ssh_known_hosts\"," +
+            "\"start_time\": \"12:32:39.060016\"," +
+            "\"result\": null," +
+            "\"duration\": 277.921," +
+            "\"__run_num__\": 9," +
+            "\"changes\": {" +
+                "\"diff\": \"diff output\"" +
+            "}" +
+        "}}}]");
+
+        Assert.assertTrue(Utils.validateFunctionCall(jsonArray));
+    }
 
     @Mock
     BuildListener listenerMock;
