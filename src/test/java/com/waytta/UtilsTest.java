@@ -284,6 +284,16 @@ public class UtilsTest {
         Assert.assertTrue(Utils.validateFunctionCall(jsonArray));
     }
 
+    @Test
+    public void testValidateBusyMinionFails() {
+        JSONArray jsonArray = JSONArray.fromObject("[{\n" +
+	    "\"outputter\": \"highstate\",\n" +
+            "\"data\": {\"p-3-testmap.pio.tv.ro\": [\"The function \\\"state.sls\\\" is running as PID 0 and was started at 1 with jid 2\"]}\n" +
+	    "}]");
+
+        Assert.assertFalse(Utils.validateFunctionCall(jsonArray));
+    }
+
     @Mock
     BuildListener listenerMock;
 
