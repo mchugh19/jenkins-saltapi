@@ -27,9 +27,7 @@ import org.kohsuke.stapler.AncestorInPath;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.FilePath;
-import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
-import hudson.model.BuildListener;
 import hudson.model.TaskListener;
 import hudson.model.Item;
 import hudson.model.Run;
@@ -69,8 +67,10 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
 
     // Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
     @DataBoundConstructor
-    public SaltAPIBuilder(String servername, String authtype, String target, String targettype, String function, JSONObject clientInterfaces, String mods, String pillarkey, String pillarvalue, String credentialsId) {
-	this.credentialsId = credentialsId;
+    public SaltAPIBuilder(String servername, String authtype, String target, String targettype, String function,
+                          JSONObject clientInterfaces, String mods, String pillarkey,
+                          String pillarvalue, String credentialsId) {
+        this.credentialsId = credentialsId;
         this.servername = servername;
         this.authtype = authtype;
         this.target = target;
@@ -207,26 +207,27 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
     }
 
     public Boolean getSaveEnvVar() {
-    	return saveEnvVar;
-    }
-    
-    public JSONObject getClientInterfaces() {
-    	return clientInterfaces;
-    }
-    
-    @DataBoundSetter
-    public void setClientInterfaces(JSONObject clientInterfaces) {
-    	this.clientInterfaces = clientInterfaces;
+        return saveEnvVar;
     }
 
-    
-    @Override
-    public void perform(Run<?, ?> run, FilePath workspace, Launcher launcher, TaskListener listener) throws InterruptedException, IOException{
-    	listener.getLogger().println("Printed from pipeline");
+    public JSONObject getClientInterfaces() {
+        return clientInterfaces;
     }
-    
+
+    @DataBoundSetter
+    public void setClientInterfaces(JSONObject clientInterfaces) {
+        this.clientInterfaces = clientInterfaces;
+    }
+
+
     @Override
-    public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) {
+    public void perform(Run<?, ?> run, FilePath workspace, Launcher launcher, TaskListener listener) throws InterruptedException, IOException {
+        listener.getLogger().println("Printed from pipeline");
+        perform(run, launcher, listener);
+    }
+
+    //    @Override
+    public boolean perform(Run build, Launcher launcher, TaskListener listener) {
         // This is where you 'build' the project.
 
         // If not not configured, grab the default
@@ -247,18 +248,18 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
         String mykwarguments = Utils.paramorize(build, listener, kwarguments);
         Boolean myBlockBuild = blockbuild;
 
-	StandardUsernamePasswordCredentials credential = getCredentialById(getCredentialsId());
-	if (credential == null) {
-	    listener.error("Invalid credentials");
-	    return true;
-	}
+        StandardUsernamePasswordCredentials credential = getCredentialById(getCredentialsId());
+        if (credential == null) {
+            listener.error("Invalid credentials");
+            return true;
+        }
 
         // Setup connection for auth
         String token = new String();
         JSONArray authArray = createAuthArray(credential);
         // listener.getLogger().println("Sending auth: "+authArray.toString());
         JSONObject httpResponse = new JSONObject();
-	JSONArray returnArray = new JSONArray();
+        JSONArray returnArray = new JSONArray();
 
         // Get an auth token
         token = Utils.getToken(myservername, authArray);
@@ -273,9 +274,9 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
         if (myClientInterface == null) {
             myClientInterface = "local";
         }
-	if (saveEnvVar == null) {
-	    saveEnvVar = false;
-	}
+        if (saveEnvVar == null) {
+            saveEnvVar = false;
+        }
 
         JSONObject saltFunc = prepareSaltFunction(build, listener, myClientInterface, mytarget, myfunction,
                 myarguments, mykwarguments);
@@ -376,7 +377,7 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
             // Just send a salt request. Don't wait for reply
             httpResponse = Utils.getJSON(myservername, saltArray, token);
             try {
-		returnArray = httpResponse.getJSONArray("return");
+                returnArray = httpResponse.getJSONArray("return");
                 if (!httpResponse.getJSONArray("return").isArray()) {
                     // Print problem
                     listener.getLogger().println("Problem on " + myfunction + " " + myarguments + " for "
@@ -389,52 +390,52 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
                 return false;
             }
         }
-	//Done sending message. Check for error and print out results
-	if (returnArray.get(0).toString().contains("TypeError")) {
-	    listener.getLogger().println("Salt reported an error for " + myfunction + " "
-		    + myarguments + " for " + mytarget + ":\n" + returnArray.toString(2));
-	    return false;
-	}
+        //Done sending message. Check for error and print out results
+        if (returnArray.get(0).toString().contains("TypeError")) {
+            listener.getLogger().println("Salt reported an error for " + myfunction + " "
+                    + myarguments + " for " + mytarget + ":\n" + returnArray.toString(2));
+            return false;
+        }
 
-	if (mySaltMessageDebug) {
-	    listener.getLogger().println("[DEBUG] Received response: " + returnArray);
-	}
+        if (mySaltMessageDebug) {
+            listener.getLogger().println("[DEBUG] Received response: " + returnArray);
+        }
 
-	boolean validFunctionExecution = Utils.validateFunctionCall(returnArray);
+        boolean validFunctionExecution = Utils.validateFunctionCall(returnArray);
 
-	if (!validFunctionExecution) {
-	    listener.getLogger()
-		.println("ERROR occurred !\nERROR: One or more minion did not return code 0 for "
-			+ myfunction + " " + myarguments + " for " + mytarget + ":\n"
-			+ returnArray.toString(2));
-	    //Save saltapi output to env if requested
-	    if (saveEnvVar) {
-		build.addAction(new PublishEnvVarAction("SALTBUILDOUTPUT", returnArray.toString()));
-	    }
-	    return false;
-	}
+        if (!validFunctionExecution) {
+            listener.getLogger()
+                    .println("ERROR occurred !\nERROR: One or more minion did not return code 0 for "
+                            + myfunction + " " + myarguments + " for " + mytarget + ":\n"
+                            + returnArray.toString(2));
+            //Save saltapi output to env if requested
+            if (saveEnvVar) {
+                build.addAction(new PublishEnvVarAction("SALTBUILDOUTPUT", returnArray.toString()));
+            }
+            return false;
+        }
 
-	// Loop is done. We have heard back from everybody. Good work team!
-	listener.getLogger().println("Response on " + myfunction + " " + myarguments + " for "
-		+ mytarget + ":");
-	if (myOutputFormat.equals("json")) {
-	    listener.getLogger().println(returnArray.toString(2));
-	} else if (myOutputFormat.equals("yaml")) {
-	    Object outputObject = returnArray.toArray();
-	    Yaml yaml = new Yaml();
-	    listener.getLogger().println(yaml.dump(outputObject));
-	} else {
-	    listener.getLogger().println("Error: Unknown output Format: x" + myOutputFormat + "x");
-	    return false;
-	}
+        // Loop is done. We have heard back from everybody. Good work team!
+        listener.getLogger().println("Response on " + myfunction + " " + myarguments + " for "
+                + mytarget + ":");
+        if (myOutputFormat.equals("json")) {
+            listener.getLogger().println(returnArray.toString(2));
+        } else if (myOutputFormat.equals("yaml")) {
+            Object outputObject = returnArray.toArray();
+            Yaml yaml = new Yaml();
+            listener.getLogger().println(yaml.dump(outputObject));
+        } else {
+            listener.getLogger().println("Error: Unknown output Format: x" + myOutputFormat + "x");
+            return false;
+        }
 
         //Save saltapi output to env if requested
-	if (saveEnvVar) {
-	    build.addAction(new PublishEnvVarAction("SALTBUILDOUTPUT", returnArray.toString()));
-	}
+        if (saveEnvVar) {
+            build.addAction(new PublishEnvVarAction("SALTBUILDOUTPUT", returnArray.toString()));
+        }
 
-	// No fail condition reached. Must be good.
-	return true;
+        // No fail condition reached. Must be good.
+        return true;
     }
 
     private JSONArray createAuthArray(StandardUsernamePasswordCredentials credential) {
@@ -448,8 +449,8 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
         return authArray;
     }
 
-    private JSONObject prepareSaltFunction(AbstractBuild build, BuildListener listener, String myClientInterface,
-            String mytarget, String myfunction, String myarguments, String mykwarguments) {
+    private JSONObject prepareSaltFunction(Run build, TaskListener listener, String myClientInterface,
+                                           String mytarget, String myfunction, String myarguments, String mykwarguments) {
         JSONObject saltFunc = new JSONObject();
         saltFunc.put("client", myClientInterface);
         if (myClientInterface.equals("local_batch")) {
@@ -464,14 +465,14 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
                 String myPillarvalue = Utils.paramorize(build, listener, pillarvalue);
 
                 JSONObject jPillar = new JSONObject();
-		try {
-		    //If value was already a jsonobject, treat it as such
-		    JSON runPillarValue = JSONSerializer.toJSON(myPillarvalue);
-		    jPillar.put(myPillarkey, runPillarValue);
-		} catch (JSONException e) {
-		    //Otherwise it must have been a string
-		    jPillar.put(JSONUtils.stripQuotes(myPillarkey), JSONUtils.stripQuotes(myPillarvalue));
-		}
+                try {
+                    //If value was already a jsonobject, treat it as such
+                    JSON runPillarValue = JSONSerializer.toJSON(myPillarvalue);
+                    jPillar.put(myPillarkey, runPillarValue);
+                } catch (JSONException e) {
+                    //Otherwise it must have been a string
+                    jPillar.put(JSONUtils.stripQuotes(myPillarkey), JSONUtils.stripQuotes(myPillarvalue));
+                }
 
                 saltFunc.put("pillar", jPillar);
             }
@@ -524,19 +525,19 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
     }
 
     StandardUsernamePasswordCredentials getCredentialById(String credentialId) {
-	List<StandardUsernamePasswordCredentials> credentials = getCredentials(Jenkins.getInstance());
-	for (StandardUsernamePasswordCredentials credential : credentials) {
-	    if (credential.getId().equals(credentialId)) {
-		return credential;
-	    }
-	}
-	return null;
+        List<StandardUsernamePasswordCredentials> credentials = getCredentials(Jenkins.getInstance());
+        for (StandardUsernamePasswordCredentials credential : credentials) {
+            if (credential.getId().equals(credentialId)) {
+                return credential;
+            }
+        }
+        return null;
     }
 
     static List<StandardUsernamePasswordCredentials> getCredentials(Jenkins context) {
         List<DomainRequirement> requirements = URIRequirementBuilder.create().build();
-	List<StandardUsernamePasswordCredentials> credentials = CredentialsProvider.lookupCredentials(StandardUsernamePasswordCredentials.class, context, ACL.SYSTEM, requirements);
-	return credentials;
+        List<StandardUsernamePasswordCredentials> credentials = CredentialsProvider.lookupCredentials(StandardUsernamePasswordCredentials.class, context, ACL.SYSTEM, requirements);
+        return credentials;
     }
 
     private void addArgumentsToSaltFunction(String myarguments, JSONObject saltFunc) {
@@ -563,13 +564,13 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
     // you don't have to do this.
     @Override
     public DescriptorImpl getDescriptor() {
-        return (DescriptorImpl)super.getDescriptor();
+        return (DescriptorImpl) super.getDescriptor();
     }
 
     @Extension // This indicates to Jenkins that this is an implementation of an extension point.
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
 
-	private int pollTime = 10;
+        private int pollTime = 10;
         private boolean saltMessageDebug;
         private String outputFormat = "json";
 
@@ -605,20 +606,20 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
         }
 
         public FormValidation doTestConnection(
-	        @QueryParameter String servername,
-	        @QueryParameter String credentialsId,
-	        @QueryParameter String authtype) {
-	    StandardUsernamePasswordCredentials usedCredential = null;
-	    List<StandardUsernamePasswordCredentials> credentials = getCredentials(Jenkins.getInstance());
-	    for (StandardUsernamePasswordCredentials credential : credentials) {
-		if (credential.getId().equals(credentialsId)) {
-		    usedCredential = credential;
-		}
-	    }
+                @QueryParameter String servername,
+                @QueryParameter String credentialsId,
+                @QueryParameter String authtype) {
+            StandardUsernamePasswordCredentials usedCredential = null;
+            List<StandardUsernamePasswordCredentials> credentials = getCredentials(Jenkins.getInstance());
+            for (StandardUsernamePasswordCredentials credential : credentials) {
+                if (credential.getId().equals(credentialsId)) {
+                    usedCredential = credential;
+                }
+            }
 
-	    if (usedCredential == null) {
-		return FormValidation.error("CredentialId error: " + usedCredential);
-	    }
+            if (usedCredential == null) {
+                return FormValidation.error("CredentialId error: " + usedCredential);
+            }
 
             if (!servername.matches("\\{\\{\\w+\\}\\}")) {
                 JSONArray authArray = new JSONArray();
@@ -638,14 +639,14 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
             return FormValidation.warning("Cannot expand parametrized server name.");
         }
 
-	public StandardListBoxModel doFillCredentialsIdItems(
-		@AncestorInPath Jenkins context, 
-		@QueryParameter final String servername) {
-	    StandardListBoxModel result = new StandardListBoxModel();
-	    result.withEmptySelection();
-	    result.withMatching(CredentialsMatchers.instanceOf(StandardUsernamePasswordCredentials.class), getCredentials(context));
-	    return result;
-	}
+        public StandardListBoxModel doFillCredentialsIdItems(
+                @AncestorInPath Jenkins context,
+                @QueryParameter final String servername) {
+            StandardListBoxModel result = new StandardListBoxModel();
+            result.withEmptySelection();
+            result.withMatching(CredentialsMatchers.instanceOf(StandardUsernamePasswordCredentials.class), getCredentials(context));
+            return result;
+        }
 
         public FormValidation doCheckServername(@QueryParameter String value) {
             if (!value.matches("\\{\\{\\w+\\}\\}")) {
@@ -665,29 +666,29 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
             return FormValidation.warning("Cannot expand parametrized server name.");
         }
 
-	public FormValidation doCheckCredentialsId(@AncestorInPath Item project, @QueryParameter String value) {
-	    if (project == null || !project.hasPermission(Item.CONFIGURE)) {
-		return FormValidation.ok();
-	    }
+        public FormValidation doCheckCredentialsId(@AncestorInPath Item project, @QueryParameter String value) {
+            if (project == null || !project.hasPermission(Item.CONFIGURE)) {
+                return FormValidation.ok();
+            }
 
-	    if (value == null) {
-		return FormValidation.ok();
-	    }
+            if (value == null) {
+                return FormValidation.ok();
+            }
 
-	    StandardUsernamePasswordCredentials usedCredential = null;
-	    List<StandardUsernamePasswordCredentials> credentials = getCredentials(Jenkins.getInstance());
-	    for (StandardUsernamePasswordCredentials credential : credentials) {
-		if (credential.getId().equals(value)) {
-		    usedCredential = credential;
-		}
-	    }
+            StandardUsernamePasswordCredentials usedCredential = null;
+            List<StandardUsernamePasswordCredentials> credentials = getCredentials(Jenkins.getInstance());
+            for (StandardUsernamePasswordCredentials credential : credentials) {
+                if (credential.getId().equals(value)) {
+                    usedCredential = credential;
+                }
+            }
 
-	    if (usedCredential == null) {
-		return FormValidation.error("Cannot find any credentials with id " + value);
-	    }
+            if (usedCredential == null) {
+                return FormValidation.error("Cannot find any credentials with id " + value);
+            }
 
-	    return FormValidation.ok();
-	}
+            return FormValidation.ok();
+        }
 
 
         public FormValidation doCheckTarget(@QueryParameter String value) {
@@ -744,4 +745,5 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
             return "Send a message to Salt API";
         }
     }
+
 }
