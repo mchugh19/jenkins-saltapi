@@ -24,9 +24,7 @@ import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.FilePath;
-import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
-import hudson.model.BuildListener;
 import hudson.model.TaskListener;
 import hudson.model.Item;
 import hudson.model.Run;
@@ -35,6 +33,7 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
 import jenkins.model.Jenkins;
+import jenkins.tasks.SimpleBuildStep;
 import net.sf.json.JSON;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONException;
@@ -69,7 +68,8 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
     // "DataBoundConstructor"
     @DataBoundConstructor
     public SaltAPIBuilder(String servername, String authtype, String target, String targettype, String function,
-            JSONObject clientInterfaces, String mods, String pillarkey, String pillarvalue, String credentialsId) {
+                          JSONObject clientInterfaces, String mods, String pillarkey,
+                          String pillarvalue, String credentialsId) {
         this.credentialsId = credentialsId;
         this.servername = servername;
         this.authtype = authtype;
@@ -103,7 +103,8 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
             if (clientInterfaces.has("usePillar")) {
                 this.usePillar = true;
                 this.pillarkey = clientInterfaces.getJSONObject("usePillar").get("pillarkey").toString();
-                this.pillarvalue = clientInterfaces.getJSONObject("usePillar").get("pillarvalue").toString();
+                this.pillarvalue = clientInterfaces.getJSONObject("usePillar").get("pillarvalue")
+                        .toString();
             } else {
                 this.usePillar = false;
                 this.pillarkey = "";
@@ -208,24 +209,25 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
     public Boolean getSaveEnvVar() {
     	return saveEnvVar;
     }
-    
+
     public JSONObject getClientInterfaces() {
     	return clientInterfaces;
     }
-    
+
     @DataBoundSetter
     public void setClientInterfaces(JSONObject clientInterfaces) {
     	this.clientInterfaces = clientInterfaces;
     }
 
-    
+
     @Override
-    public void perform(Run<?, ?> run, FilePath workspace, Launcher launcher, TaskListener listener) throws InterruptedException, IOException{
-    	listener.getLogger().println("Printed from pipeline");
+    public void perform(Run<?, ?> run, FilePath workspace, Launcher launcher, TaskListener listener) throws InterruptedException, IOException {
+        listener.getLogger().println("Printed from pipeline");
+        perform(run, launcher, listener);
     }
-    
-    @Override
-    public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) {
+
+    //    @Override
+    public boolean perform(Run build, Launcher launcher, TaskListener listener) {
         // This is where you 'build' the project.
 
         // If not not configured, grab the default
@@ -438,8 +440,8 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
         return authArray;
     }
 
-    private JSONObject prepareSaltFunction(AbstractBuild build, BuildListener listener, String myClientInterface,
-            String mytarget, String myfunction, String myarguments, String mykwarguments) {
+    private JSONObject prepareSaltFunction(Run build, TaskListener listener, String myClientInterface,
+                                           String mytarget, String myfunction, String myarguments, String mykwarguments) {
         JSONObject saltFunc = new JSONObject();
         saltFunc.put("client", myClientInterface);
         if (myClientInterface.equals("local_batch")) {
@@ -592,7 +594,9 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
             return outputFormat;
         }
 
-        public FormValidation doTestConnection(@QueryParameter String servername, @QueryParameter String credentialsId,
+        public FormValidation doTestConnection(
+                @QueryParameter String servername,
+                @QueryParameter String credentialsId,
                 @QueryParameter String authtype) {
             StandardUsernamePasswordCredentials usedCredential = null;
             List<StandardUsernamePasswordCredentials> credentials = getCredentials(Jenkins.getInstance());
