@@ -222,8 +222,11 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
 
     @Override
     public void perform(Run<?, ?> run, FilePath workspace, Launcher launcher, TaskListener listener) throws InterruptedException, IOException {
-        listener.getLogger().println("Printed from pipeline");
-        perform(run, launcher, listener);
+        listener.getLogger().println("SaltStack: Started from Pipeline");
+        boolean success = perform(run, launcher, listener);
+        if (!success) {
+            throw new InterruptedException();
+        }
     }
 
     //    @Override
