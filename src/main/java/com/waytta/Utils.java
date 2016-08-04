@@ -13,8 +13,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import hudson.EnvVars;
-import hudson.model.AbstractBuild;
-import hudson.model.BuildListener;
+import hudson.model.Run;
+import hudson.model.TaskListener;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import net.sf.json.JSONSerializer;
@@ -108,7 +108,7 @@ public class Utils {
 
     // replaces $string with value of env($string). Used in conjunction with
     // parameterized builds
-    public static String paramorize(AbstractBuild build, BuildListener listener, String paramer) {
+    public static String paramorize(Run build, TaskListener listener, String paramer) {
         Pattern pattern = Pattern.compile("\\{\\{\\w+\\}\\}");
         Matcher matcher = pattern.matcher(paramer);
         while (matcher.find()) {
