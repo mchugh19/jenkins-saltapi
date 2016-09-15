@@ -17,6 +17,7 @@ import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
+import org.jenkinsci.Symbol;
 
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -570,7 +571,7 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
         return (DescriptorImpl) super.getDescriptor();
     }
 
-    @Extension // This indicates to Jenkins that this is an implementation of an extension point.
+    @Extension @Symbol("salt")
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
 
         private int pollTime = 10;
