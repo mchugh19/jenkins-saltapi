@@ -5,9 +5,15 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
+import org.jenkinsci.Symbol;
+import org.kohsuke.stapler.AncestorInPath;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.StaplerRequest;
 import org.yaml.snakeyaml.Yaml;
 
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
@@ -16,27 +22,20 @@ import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
-import jenkins.model.Jenkins;
-import jenkins.tasks.SimpleBuildStep;
-import org.jenkinsci.Symbol;
-
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.DataBoundSetter;
-import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
-import org.kohsuke.stapler.AncestorInPath;
 
 import hudson.Extension;
-import hudson.Launcher;
 import hudson.FilePath;
+import hudson.Launcher;
 import hudson.model.AbstractProject;
-import hudson.model.TaskListener;
 import hudson.model.Item;
 import hudson.model.Run;
+import hudson.model.TaskListener;
 import hudson.security.ACL;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
+import jenkins.model.Jenkins;
+import jenkins.tasks.SimpleBuildStep;
 import net.sf.json.JSON;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONException;
@@ -211,6 +210,15 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
 
     public Boolean getSaveEnvVar() {
     	return saveEnvVar;
+    }
+    
+    public JSONObject getClientInterfaces() {
+    	return clientInterfaces;
+    }
+
+    @DataBoundSetter
+    public void setClientInterfaces(JSONObject clientInterfaces) {
+    	this.clientInterfaces = clientInterfaces;
     }
 
 
@@ -442,8 +450,9 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
         JSONObject saltFunc = new JSONObject();
         saltFunc.put("client", myClientInterface);
         if (myClientInterface.equals("local_batch")) {
-            saltFunc.put("batch", batchSize);
-            listener.getLogger().println("Running in batch mode. Batch size: " + batchSize);
+        	String myBatchSize = Utils.paramorize(build, listener, batchSize);
+            saltFunc.put("batch", myBatchSize);
+            listener.getLogger().println("Running in batch mode. Batch size: " + myBatchSize);
         }
         if (myClientInterface.equals("runner")) {
             saltFunc.put("mods", mods);
