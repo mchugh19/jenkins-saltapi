@@ -7,11 +7,6 @@ import java.util.Map;
 import java.util.logging.Logger;
 import java.util.logging.Level;
 
-import org.kohsuke.stapler.AncestorInPath;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.DataBoundSetter;
-import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
 import org.yaml.snakeyaml.Yaml;
 
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
