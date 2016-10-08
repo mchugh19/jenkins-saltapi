@@ -1,5 +1,6 @@
 package com.waytta;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -14,6 +15,7 @@ import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
+import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
 import org.jenkinsci.Symbol;
@@ -35,8 +37,6 @@ import hudson.security.ACL;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
-import jenkins.model.Jenkins;
-import jenkins.tasks.SimpleBuildStep;
 import net.sf.json.JSON;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONException;
@@ -211,15 +211,6 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
 
     public Boolean getSaveEnvVar() {
     	return saveEnvVar;
-    }
-
-    public JSONObject getClientInterfaces() {
-    	return clientInterfaces;
-    }
-
-    @DataBoundSetter
-    public void setClientInterfaces(JSONObject clientInterfaces) {
-    	this.clientInterfaces = clientInterfaces;
     }
 
 
