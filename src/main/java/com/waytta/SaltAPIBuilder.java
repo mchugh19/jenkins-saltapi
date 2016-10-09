@@ -560,7 +560,7 @@ public class SaltAPIBuilder extends Builder {
                 JSONObject auth = new JSONObject();
                 auth.put("username", usedCredential.getUsername());
                 auth.put("password", usedCredential.getPassword().getPlainText());
-                auth.put("eauth", authtype);
+                auth.put("eauth", clientInterface.getAuthType());
                 authArray.add(auth);
                 String token = Utils.getToken(servername, authArray);
                 if (token.contains("Error")) {
