@@ -9,15 +9,15 @@
   </f:entry>
 
 
-  <f:entry title="Auth Type" field="authType">
-    <select name="authType">
-      <f:option value="pam" selected="${instance.authType == 'pam'}">pam</f:option>
-      <f:option value="ldap" selected="${instance.authType == 'ldap'}">ldap</f:option>
+  <f:entry title="Auth Type" field="authtype">
+    <select name="authtype">
+      <f:option value="pam" selected="${instance.authtype == 'pam'}">pam</f:option>
+      <f:option value="ldap" selected="${instance.authtype == 'ldap'}">ldap</f:option>
     </select>
   </f:entry>
   <f:validateButton
    title="${%Test Connection}" progress="${%Testing...}"
-   method="testConnection" with="servername,credentialsId,authType" />
+   method="testConnection" with="servername,credentialsId,authtype" />
 
   <f:dropdownList name="clientInterfaces" title="Client Interface">
     <f:dropdownListBlock title="local" value="local" selected="${instance.clientInterface == 'local'}">

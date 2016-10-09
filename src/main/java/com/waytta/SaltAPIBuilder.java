@@ -15,14 +15,21 @@ import org.yaml.snakeyaml.Yaml;
 
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
-import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
-import jenkins.model.Jenkins;
-import hudson.security.ACL;
+
 import hudson.model.Item;
+import hudson.Extension;
+import hudson.Launcher;
+import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
+import hudson.model.BuildListener;
+import hudson.security.ACL;
+import hudson.tasks.BuildStepDescriptor;
+import hudson.tasks.Builder;
+import hudson.util.FormValidation;
 
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -30,25 +37,14 @@ import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.AncestorInPath;
 
-import hudson.Extension;
-import hudson.Launcher;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.BuildListener;
-import hudson.model.Item;
-import hudson.security.ACL;
-import hudson.tasks.BuildStepDescriptor;
-import hudson.tasks.Builder;
-import hudson.util.FormValidation;
 import jenkins.model.Jenkins;
+
 import net.sf.json.JSON;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONException;
-import net.sf.json.JSONObject;
 import net.sf.json.JSONSerializer;
 import net.sf.json.JSONObject;
 import net.sf.json.util.JSONUtils;
-import net.sf.json.JSONException;
 
 public class SaltAPIBuilder extends Builder {
     private static final Logger LOGGER = Logger.getLogger("com.waytta.saltstack");
