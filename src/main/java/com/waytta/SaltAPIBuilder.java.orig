@@ -52,8 +52,6 @@ import net.sf.json.JSONException;
 public class SaltAPIBuilder extends Builder {
     private static final Logger LOGGER = Logger.getLogger("com.waytta.saltstack");
 
-    private String servername;
-    private String authtype;
     private String arguments;
     private String kwarguments;
     private final String clientInterfaceName;
@@ -67,9 +65,6 @@ public class SaltAPIBuilder extends Builder {
     @DataBoundConstructor
     public SaltAPIBuilder(String servername, String authtype, String target, String targettype, String function, JSONObject clientInterfaces, String mods, String pillarkey, String pillarvalue, String credentialsId) {
 
-        this.servername = servername;
-        this.authtype = authtype;
-
         if (clientInterfaces.has("clientInterface")) {
             this.clientInterfaceName = clientInterfaces.get("clientInterface").toString();
         } else {
@@ -78,19 +73,19 @@ public class SaltAPIBuilder extends Builder {
 
         switch (clientInterfaceName) {
             case "local":
-                clientInterface = new LocalClient(credentialsId, target, targettype, function, clientInterfaces.getBoolean("blockbuild"), clientInterfaces.getInt("jobPollTime"));
+                clientInterface = new LocalClient(credentialsId, servername, authtype, target, targettype, function, clientInterfaces.getBoolean("blockbuild"), clientInterfaces.getInt("jobPollTime"));
                 break;
 
             case "local_batch":
-                clientInterface = new LocalBatchClient(credentialsId, target, targettype, function, clientInterfaces.get("batchSize").toString());
+                clientInterface = new LocalBatchClient(credentialsId, servername, authtype, target, targettype, function, clientInterfaces.get("batchSize").toString());
                 break;
 
             case "runner":
-                clientInterface = new RunnerClient(credentialsId, target, targettype, function, clientInterfaces.get("mods").toString(), clientInterfaces);
+                clientInterface = new RunnerClient(credentialsId, servername, authtype, target, targettype, function, clientInterfaces.get("mods").toString(), clientInterfaces);
                 break;
 
             default:
-                clientInterface = new BasicClient(credentialsId, target, targettype, function);
+                clientInterface = new BasicClient(credentialsId, servername, authtype, target, targettype, function);
         }
     }
 
@@ -98,11 +93,11 @@ public class SaltAPIBuilder extends Builder {
      * We'll use this from the <tt>config.jelly</tt>.
      */
     public String getServername() {
-        return servername;
+        return clientInterface.getServerName();
     }
 
     public String getAuthtype() {
-        return authtype;
+        return clientInterface.getAuthType();
     }
 
     public String getTarget() {
@@ -184,10 +179,23 @@ public class SaltAPIBuilder extends Builder {
     @Override
     public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) {
         // This is where you 'build' the project.
+<<<<<<< fab57ff9353021d24a28f84add181d39fa737f52
+
+        // If not not configured, grab the default
+        int myJobPollTime = 10;
+        if (clientInterface.getJobPollTime()== null) {
+            myJobPollTime = getDescriptor().getPollTime();
+        } else {
+            myJobPollTime = clientInterface.getJobPollTime();
+        }
+
+=======
         
+        Boolean mySaltMessageDebug = getDescriptor().getSaltMessageDebug();
+>>>>>>> ... the amount of mocking really shows the complexity of the perform method.
         String myOutputFormat = getDescriptor().getOutputFormat();
         String myClientInterface = clientInterfaceName;
-        String myservername = Utils.paramorize(build, listener, servername);
+        String myservername = Utils.paramorize(build, listener, clientInterface.getServerName());
         String mytarget = Utils.paramorize(build, listener, clientInterface.getTarget());
         String myfunction = Utils.paramorize(build, listener, clientInterface.getFunction());
         String myarguments = Utils.paramorize(build, listener, arguments);
@@ -203,7 +211,7 @@ public class SaltAPIBuilder extends Builder {
         // Setup connection for auth
         String token = new String();
         JSONArray authArray = createAuthArray(credential);
-        //listener.getLogger().println("Sending auth: "+authArray.toString());
+        // listener.getLogger().println("Sending auth: "+authArray.toString());
         JSONObject httpResponse = new JSONObject();
         JSONArray returnArray = new JSONArray();
 
@@ -213,7 +221,7 @@ public class SaltAPIBuilder extends Builder {
             listener.getLogger().println(token);
             return false;
         }
-        // If we got this far, auth must have been good and we've got a token
+        // If we got this far auth must have been good and we've got a token
 
         // Hardcode clientInterface if not yet set. Once constructor runs, this
         // will not be necessary
@@ -255,7 +263,7 @@ public class SaltAPIBuilder extends Builder {
             } catch (Exception e) {
                 listener.getLogger()
                         .println("Problem: " + myfunction + " " + myarguments + " to " + myservername
-                        + " for " + mytarget + ":\n" + e + "\n\n" + httpResponse.toString(2));
+                                + " for " + mytarget + ":\n" + e + "\n\n" + httpResponse.toString(2));
                 return false;
             }
 
@@ -286,14 +294,14 @@ public class SaltAPIBuilder extends Builder {
             } catch (Exception e) {
                 listener.getLogger()
                         .println("Problem: " + myfunction + " " + myarguments + " to " + myservername
-                        + " for " + mytarget + ":\n" + e + "\n\n" + httpResponse.toString(2));
+                                + " for " + mytarget + ":\n" + e + "\n\n" + httpResponse.toString(2));
                 return false;
             }
 
             // Now that we know how many minions have responded, and how many we
             // are waiting on. Let's see more have finished
             if (numMinionsDone < numMinions) {
-                // Don't print annoying messages unless we really are waiting for
+                // Don't print annying messages unless we really are waiting for
                 // more minions to return
                 listener.getLogger().println(
                         "Will check status every " + clientInterface.getJobPollTime() + " seconds...");
@@ -314,7 +322,7 @@ public class SaltAPIBuilder extends Builder {
                 } catch (Exception e) {
                     listener.getLogger()
                             .println("Problem: " + myfunction + " " + myarguments + " for " + mytarget
-                            + ":\n" + e + "\n\n" + httpResponse.toString(2).split("\\\\n")[0]);
+                                    + ":\n" + e + "\n\n" + httpResponse.toString(2).split("\\\\n")[0]);
                     return false;
                 }
             }
@@ -352,7 +360,7 @@ public class SaltAPIBuilder extends Builder {
                     .println("ERROR occurred !\nERROR: One or more minion did not return code 0 for "
                             + myfunction + " " + myarguments + " for " + mytarget + ":\n"
                             + returnArray.toString(2));
-            // Save saltapi output to env if requested
+            //Save saltapi output to env if requested
             if (saveEnvVar) {
                 build.addAction(new PublishEnvVarAction("SALTBUILDOUTPUT", returnArray.toString()));
             }
@@ -387,7 +395,7 @@ public class SaltAPIBuilder extends Builder {
         JSONObject auth = new JSONObject();
         auth.put("username", credential.getUsername());
         auth.put("password", credential.getPassword().getPlainText());
-        auth.put("eauth", authtype);
+        auth.put("eauth", clientInterface.getAuthType());
         authArray.add(auth);
 
         return authArray;
@@ -398,9 +406,8 @@ public class SaltAPIBuilder extends Builder {
         JSONObject saltFunc = new JSONObject();
         saltFunc.put("client", myClientInterface);
         if (myClientInterface.equals("local_batch")) {
-            String mybatch = Utils.paramorize(build, listener, clientInterface.getBatchSize());
-            saltFunc.put("batch", mybatch);
-            listener.getLogger().println("Running in batch mode. Batch size: " + mybatch);
+            saltFunc.put("batch", clientInterface.getBatchSize());
+            listener.getLogger().println("Running in batch mode. Batch size: " + clientInterface.getBatchSize());
         }
         if (myClientInterface.equals("runner")) {
             saltFunc.put("mods", clientInterface.getMods());

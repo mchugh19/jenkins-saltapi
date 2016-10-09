@@ -7,8 +7,6 @@ public class BasicClient {
 
     public static final int DEFAULT_JOB_POLL_TIME = 10;
     private final String credentialsId;
-    private final String serverName;
-    private final String authType;
     private final String target;
     private final String targetType;
     private final String function;
@@ -22,14 +20,12 @@ public class BasicClient {
     private Integer jobPollTime = DEFAULT_JOB_POLL_TIME;
 
 
-    public BasicClient(String credentialsId, String servername, String authType, String target, String targetType, String function) {
-        this(credentialsId, servername, authType, target, targetType, function, "100%");
+    public BasicClient(String credentialsId, String target, String targetType, String function) {
+        this(credentialsId, target, targetType, function, "100%");
     }
 
-    public BasicClient(String credentialsId, String servername, String authType, String target, String targetType, String function, String batchSize) {
+    public BasicClient(String credentialsId, String target, String targetType, String function, String batchSize) {
         this.credentialsId = credentialsId;
-        this.serverName = servername;
-        this.authType = authType;
         this.target = target;
         this.targetType = targetType;
         this.function = function;
@@ -67,14 +63,6 @@ public class BasicClient {
 
     public void setMods(String mods) {
         this.mods = mods;
-    }
-
-    public String getServerName() {
-        return serverName;
-    }
-
-    public String getAuthType() {
-        return authType;
     }
 
     public String getTarget() {
