@@ -59,7 +59,7 @@ public class SaltAPIBuilderTest {
     public void testConstructorWithAnyValueForClientInterface() {
         when(clientInterfaces.get("clientInterface")).thenReturn("JUNIT");
         SaltAPIBuilder builder = build();
-        validateBuilder(builder, "JUNIT"); 
+        validateBuilder(builder, "JUNIT");
     }
 
     @Test
@@ -74,25 +74,12 @@ public class SaltAPIBuilderTest {
     }
 
     @Test
-    public void testConstructorWithUsePillarAndRunnerClientInterfaceAndUserPillar() {
+    public void testConstructorRunnerClientInterfaceAndPillar() {
         when(clientInterfaces.get("clientInterface")).thenReturn("runner");
         when(clientInterfaces.get("mods")).thenReturn("JUNIT_MODS");
-        JSONObject usePillar = mock(JSONObject.class);
-        when(clientInterfaces.has("usePillar")).thenReturn(TRUE);
-        when(clientInterfaces.getJSONObject("usePillar")).thenReturn(usePillar);
-        when(usePillar.get("pillarkey")).thenReturn("JUNIT_PILLARKEY");
-        when(usePillar.get("pillarvalue")).thenReturn("JUNIT_PILLARVALUE");
+        when(clientInterfaces.get("pillarvalue")).thenReturn("JUNIT_PILLARVALUE");
         SaltAPIBuilder builder = build();
-        validateBuilder(builder, "runner", "JUNIT_MODS", true, "JUNIT_PILLARKEY", "JUNIT_PILLARVALUE");
-    }
-
-    @Test
-    public void testConstructorWithUsePillarAndRunnerClientInterfaceButNoUserPillar() {
-        when(clientInterfaces.get("clientInterface")).thenReturn("runner");
-        when(clientInterfaces.get("mods")).thenReturn("JUNIT_MODS");
-        
-        SaltAPIBuilder builder = build();
-        validateBuilder("runner", builder, "JUNIT_MODS");        
+        validateBuilder(builder, "runner", "JUNIT_MODS", "JUNIT_PILLARVALUE");
     }
     
     @Test
@@ -109,32 +96,30 @@ public class SaltAPIBuilderTest {
     private void validateBuilder(SaltAPIBuilder builder,
                                  String clientInterfaces,
                                  String mods, 
-                                 Boolean usePillar,
-                                 String pillarkey,
                                  String pillarValue){
-        validateBuilder(builder, clientInterfaces, TEN, "100%", mods, usePillar, pillarkey, pillarValue );
+        validateBuilder(builder, clientInterfaces, TEN, "100%", mods, pillarValue );
     }
     private void validateBuilder(SaltAPIBuilder builder,
                                  String clientInterface) {
-        validateBuilder( builder, clientInterface, TEN, "100%", "", false, "", "");
+        validateBuilder( builder, clientInterface, TEN, "100%", "", "");
     }
 
     private void validateBuilder(String clientInterface, 
                                  SaltAPIBuilder builder,
                                  String mods) {
-        validateBuilder( builder, clientInterface, TEN, "100%", mods, false, "", "");
+        validateBuilder( builder, clientInterface, TEN, "100%", mods, "");
     }
 
     private void validateBuilder(SaltAPIBuilder builder,
                                  String clientInterface,
                                  String batchSize) {
-        validateBuilder( builder, clientInterface, TEN, batchSize, "", false, "", "");
+        validateBuilder( builder, clientInterface, TEN, batchSize, "", "");
     }
 
     private void validateBuilder(SaltAPIBuilder builder,
                                  String clientInterface,
                                  Integer jobPollTime) {
-        validateBuilder( builder, clientInterface, jobPollTime, "100%", "", false, "", "");
+        validateBuilder( builder, clientInterface, jobPollTime, "100%", "", "");
     }
     
     private void validateBuilder(SaltAPIBuilder builder,
@@ -142,16 +127,12 @@ public class SaltAPIBuilderTest {
                                  Integer jobPollTime,
                                  String batchSize,
                                  String mods,
-                                 Boolean usePillar,
-                                 String pillarkey,
                                  String pillarValue) {
         assertFalse(builder.getBlockbuild());
         assertEquals(clientInterface, builder.getClientInterface());
         assertEquals(batchSize, builder.getBatchSize());
         assertEquals(jobPollTime, builder.getJobPollTime());
         assertEquals(mods, builder.getMods());
-        assertEquals(usePillar,builder.getUsePillar());
-        assertEquals(pillarkey, builder.getPillarkey());
         assertEquals(pillarValue, builder.getPillarvalue());
     }
     
@@ -164,7 +145,6 @@ public class SaltAPIBuilderTest {
                 "function",
                 clientInterfaces,
                 "mods",
-                "pillarkey",
                 "pillarvalue",
                 DEFAULT_CREDENTIAL_ID);
     }

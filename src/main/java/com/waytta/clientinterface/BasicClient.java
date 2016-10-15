@@ -7,7 +7,7 @@ public class BasicClient {
     private String target;
     private String targetType;
     private final String function;
-    private String batchSize;
+    private String batchSize = "100%";
     private String mods = "";
     private String pillarvalue = "";
     private Boolean blockBuild = Boolean.FALSE;
