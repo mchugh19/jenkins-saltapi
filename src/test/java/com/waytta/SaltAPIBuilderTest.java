@@ -66,6 +66,8 @@ public class SaltAPIBuilderTest {
     public void testConstructorWithLocalBatchClientInterface() {
         when(clientInterfaces.get("clientInterface")).thenReturn("local_batch");
         when(clientInterfaces.get("batchSize")).thenReturn("JUNIT_BATCHSIZE");
+        when(clientInterfaces.get("target")).thenReturn("target");
+        when(clientInterfaces.get("targetType")).thenReturn("list");
         SaltAPIBuilder builder = build();
         validateBuilder(builder, "local_batch", "JUNIT_BATCHSIZE");
         
@@ -98,6 +100,8 @@ public class SaltAPIBuilderTest {
         when(clientInterfaces.has("clientInterface")).thenReturn(FALSE);
         when(clientInterfaces.getBoolean("blockBuild")).thenReturn(FALSE);
         when(clientInterfaces.getInt("jobPollTime")).thenReturn(TESTINT);
+        when(clientInterfaces.get("target")).thenReturn("target");
+        when(clientInterfaces.get("targetType")).thenReturn("list");
         SaltAPIBuilder builder = build();
         validateBuilder(builder, "local", TESTINT); 
     }

@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.logging.Level;
 
 import com.waytta.clientinterface.BasicClient;
@@ -54,15 +56,13 @@ public class SaltAPIBuilder extends Builder {
     private String arguments;
     private String kwarguments;
     private final String clientInterfaceName;
-
     private Boolean saveEnvVar;
-
     private BasicClient clientInterface;
 
     // Fields in config.jelly must match the parameter names in the
     // "DataBoundConstructor"
     @DataBoundConstructor
-    public SaltAPIBuilder(String servername, String authtype, String target, String targettype, String function, JSONObject clientInterfaces, String mods, String pillarkey, String pillarvalue, String credentialsId) {
+    public SaltAPIBuilder(String servername, String authtype, String target, String targettype, String function, JSONObject clientInterfaces, String mods, String pillarvalue, String credentialsId) {
 
         this.servername = servername;
         this.authtype = authtype;
@@ -75,15 +75,15 @@ public class SaltAPIBuilder extends Builder {
 
         switch (clientInterfaceName) {
             case "local":
-                clientInterface = new LocalClient(credentialsId, target, targettype, function, clientInterfaces.getBoolean("blockbuild"), clientInterfaces.getInt("jobPollTime"));
+                clientInterface = new LocalClient(credentialsId, clientInterfaces.get("target").toString(), clientInterfaces.get("targetType").toString(), function, clientInterfaces.getBoolean("blockbuild"), clientInterfaces.getInt("jobPollTime"));
                 break;
 
             case "local_batch":
-                clientInterface = new LocalBatchClient(credentialsId, target, targettype, function, clientInterfaces.get("batchSize").toString());
+                clientInterface = new LocalBatchClient(credentialsId, clientInterfaces.get("target").toString(), clientInterfaces.get("targetType").toString(), function, clientInterfaces.get("batchSize").toString());
                 break;
 
             case "runner":
-                clientInterface = new RunnerClient(credentialsId, target, targettype, function, clientInterfaces.get("mods").toString(), clientInterfaces);
+                clientInterface = new RunnerClient(credentialsId, function, clientInterfaces.get("mods").toString(), clientInterfaces.get("pillarvalue").toString());
                 break;
 
             default:
@@ -147,22 +147,13 @@ public class SaltAPIBuilder extends Builder {
     public Integer getJobPollTime() {
         return clientInterface.getJobPollTime();
     }
-
+    
     public String getMods() {
-
-        return clientInterface.getMods();
+    	return clientInterface.getMods();
     }
-
-    public Boolean getUsePillar() {
-        return clientInterface.getUsePillar();
-    }
-
-    public String getPillarkey() {
-        return clientInterface.getPillarKey();
-    }
-
+    
     public String getPillarvalue() {
-        return clientInterface.getPillarValue();
+    	return clientInterface.getPillarValue();
     }
 
     public String getCredentialsId() {
@@ -185,7 +176,7 @@ public class SaltAPIBuilder extends Builder {
         String myOutputFormat = getDescriptor().getOutputFormat();
         String myClientInterface = clientInterfaceName;
         String myservername = Utils.paramorize(build, listener, servername);
-        String mytarget = Utils.paramorize(build, listener, clientInterface.getTarget());
+        String mytarget = Utils.paramorize(build, listener, getTarget());
         String myfunction = Utils.paramorize(build, listener, clientInterface.getFunction());
         String myarguments = Utils.paramorize(build, listener, arguments);
         String mykwarguments = Utils.paramorize(build, listener, kwarguments);
@@ -402,22 +393,11 @@ public class SaltAPIBuilder extends Builder {
         if (myClientInterface.equals("runner")) {
             saltFunc.put("mods", clientInterface.getMods());
 
-            if (clientInterface.getUsePillar()) {
-                String myPillarkey = Utils.paramorize(build, listener, clientInterface.getPillarKey());
-                String myPillarvalue = Utils.paramorize(build, listener, clientInterface.getPillarValue());
-
-                JSONObject jPillar = new JSONObject();
-                try {
-                    // If value was already a jsonobject, treat it as such
-                    JSON runPillarValue = JSONSerializer.toJSON(myPillarvalue);
-                    jPillar.put(myPillarkey, runPillarValue);
-                } catch (JSONException e) {
-                    // Otherwise it must have been a string
-                    jPillar.put(JSONUtils.stripQuotes(myPillarkey), JSONUtils.stripQuotes(myPillarvalue));
-                }
-
-                saltFunc.put("pillar", jPillar);
-            }
+            String myPillarvalue = Utils.paramorize(build, listener, clientInterface.getPillarValue());
+            JSONObject jPillar = new JSONObject();
+            // If value was already a jsonobject, treat it as such
+            JSON runPillarValue = JSONSerializer.toJSON(myPillarvalue);
+            saltFunc.put("pillar", runPillarValue);
         }
         saltFunc.put("tgt", mytarget);
         saltFunc.put("expr_form", clientInterface.getTargetType());
@@ -671,6 +651,24 @@ public class SaltAPIBuilder extends Builder {
         public FormValidation doCheckBatchSize(@QueryParameter String value) {
             if (value.length() == 0) {
                 return FormValidation.error("Please specify batch size");
+            }
+            return FormValidation.ok();
+        }
+        
+        public FormValidation doCheckPillarvalue(@QueryParameter String value) {
+        	// Check to see if paramorized. Ex: {{variable}}
+        	// This cannot be evaluated until build, so trust that all is well
+        	Pattern pattern = Pattern.compile("\\{\\{\\w+\\}\\}");
+            Matcher matcher = pattern.matcher(value);
+            if (matcher.matches()) {
+            	return FormValidation.ok();
+            }
+        	try {
+                // If value was already a jsonobject, treat it as such
+                JSON runPillarValue = JSONSerializer.toJSON(value);
+            } catch (JSONException e) {
+                // Otherwise it must have been a string
+            	return FormValidation.error("Pillar should be in JSON format");
             }
             return FormValidation.ok();
         }

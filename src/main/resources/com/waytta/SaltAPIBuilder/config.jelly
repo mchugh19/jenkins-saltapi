@@ -31,22 +31,6 @@
     </f:dropdownListBlock>
   </f:dropdownList>
 
-  <f:entry title="Target" field="target">
-    <f:textbox />
-  </f:entry>
-  <f:entry title="Target Type" field="targetType">
-    <select name="targetType">
-      <f:option value="glob" selected="${instance.targetType == 'glob'}">glob</f:option>
-      <f:option value="pcre" selected="${instance.targetType == 'pcre'}">pcre</f:option>
-      <f:option value="list" selected="${instance.targetType == 'list'}">list</f:option>
-      <f:option value="grain" selected="${instance.targetType == 'grain'}">grain</f:option>
-      <f:option value="pillar" selected="${instance.targetType == 'pillar'}">pillar</f:option>
-      <f:option value="nodegroup" selected="${instance.targetType == 'nodegroup'}">nodegroup</f:option>
-      <f:option value="range" selected="${instance.targetType == 'range'}">range</f:option>
-      <f:option value="compound" selected="${instance.targetType == 'compound'}">compound</f:option>
-    </select>
-  </f:entry>
-
   <f:entry title="Function" field="function">
     <f:textbox default="cmd.run" />
   </f:entry>

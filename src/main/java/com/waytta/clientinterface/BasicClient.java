@@ -1,35 +1,24 @@
 package com.waytta.clientinterface;
 
-/**
- * Created by esmalling on 4/24/16.
- */
 public class BasicClient {
 
     public static final int DEFAULT_JOB_POLL_TIME = 10;
     private final String credentialsId;
-    private final String target;
-    private final String targetType;
+    private String target;
+    private String targetType;
     private final String function;
     private String batchSize;
-
     private String mods = "";
-    private Boolean usePillar = Boolean.FALSE;
-    private String pillarkey = "";
     private String pillarvalue = "";
     private Boolean blockBuild = Boolean.FALSE;
     private Integer jobPollTime = DEFAULT_JOB_POLL_TIME;
-
+    
 
     public BasicClient(String credentialsId, String target, String targetType, String function) {
-        this(credentialsId, target, targetType, function, "100%");
-    }
-
-    public BasicClient(String credentialsId, String target, String targetType, String function, String batchSize) {
         this.credentialsId = credentialsId;
         this.target = target;
         this.targetType = targetType;
         this.function = function;
-        this.batchSize = batchSize;
     }
 
 
@@ -39,22 +28,6 @@ public class BasicClient {
 
     public void setPillarValue(String pillarvalue) {
         this.pillarvalue = pillarvalue;
-    }
-
-    public Boolean getUsePillar() {
-        return usePillar;
-    }
-
-    public void setUsePillar(Boolean usePillar) {
-        this.usePillar = usePillar;
-    }
-
-    public String getPillarKey() {
-        return pillarkey;
-    }
-
-    public void setPillarKey(String pillarkey) {
-        this.pillarkey = pillarkey;
     }
 
     public String getMods() {
@@ -68,9 +41,17 @@ public class BasicClient {
     public String getTarget() {
         return target;
     }
+    
+    public void setTarget(String target) {
+    	this.target = target;
+    }
 
     public String getTargetType() {
         return targetType;
+    }
+    
+    public void setTargetType(String targetType) {
+    	this.targetType = targetType;
     }
 
     public String getFunction() {
