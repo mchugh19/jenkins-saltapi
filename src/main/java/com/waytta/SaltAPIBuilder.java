@@ -1,14 +1,16 @@
 package com.waytta;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.logging.Level;
 
+import org.jenkinsci.Symbol;
 import com.waytta.clientinterface.BasicClient;
 import com.waytta.clientinterface.LocalBatchClient;
 import com.waytta.clientinterface.LocalClient;
@@ -24,10 +26,11 @@ import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 
 import hudson.model.Item;
 import hudson.Extension;
+import hudson.FilePath;
 import hudson.Launcher;
-import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
-import hudson.model.BuildListener;
+import hudson.model.Run;
+import hudson.model.TaskListener;
 import hudson.security.ACL;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
@@ -40,7 +43,7 @@ import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.AncestorInPath;
 
 import jenkins.model.Jenkins;
-
+import jenkins.tasks.SimpleBuildStep;
 import net.sf.json.JSON;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONException;
@@ -48,7 +51,7 @@ import net.sf.json.JSONSerializer;
 import net.sf.json.JSONObject;
 import net.sf.json.util.JSONUtils;
 
-public class SaltAPIBuilder extends Builder {
+public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
     private static final Logger LOGGER = Logger.getLogger("com.waytta.saltstack");
 
     private String servername;
@@ -170,7 +173,16 @@ public class SaltAPIBuilder extends Builder {
     }
 
     @Override
-    public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) {
+    public void perform(Run<?, ?> run, FilePath workspace, Launcher launcher, TaskListener listener) throws InterruptedException, IOException {
+        listener.getLogger().println("SaltStack: Started from Pipeline");
+        boolean success = perform(run, launcher, listener);
+        if (!success) {
+            throw new InterruptedException();
+        }
+    }
+
+    //    @Override
+    public boolean perform(Run build, Launcher launcher, TaskListener listener) {
         // This is where you 'build' the project.
         
         String myOutputFormat = getDescriptor().getOutputFormat();
@@ -367,7 +379,7 @@ public class SaltAPIBuilder extends Builder {
         return authArray;
     }
 
-    private JSONObject prepareSaltFunction(AbstractBuild build, BuildListener listener, String myClientInterface,
+    private JSONObject prepareSaltFunction(Run build, TaskListener listener, String myClientInterface,
                                            String mytarget, String myfunction, String myarguments, String mykwarguments) {
         JSONObject saltFunc = new JSONObject();
         saltFunc.put("client", myClientInterface);
@@ -478,8 +490,7 @@ public class SaltAPIBuilder extends Builder {
         return (DescriptorImpl) super.getDescriptor();
     }
 
-    @Extension // This indicates to Jenkins that this is an implementation of an
-               // extension point.
+    @Extension @Symbol("salt")
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
 
         private int pollTime = 10;
