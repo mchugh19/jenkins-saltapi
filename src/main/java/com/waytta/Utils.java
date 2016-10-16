@@ -139,6 +139,10 @@ public class Utils {
 
     public static boolean validateFunctionCall(JSONArray returnArray) {
         boolean result = true;
+        
+        if (returnArray.get(0).toString().contains("TypeError")) {
+            result = false;
+        }
 
         for (Object o : returnArray) {
             if (o instanceof Boolean) {
@@ -232,8 +236,6 @@ public class Utils {
                 }
             }
         }
-
         return result;
-
     }
 }

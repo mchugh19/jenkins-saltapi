@@ -156,7 +156,7 @@ public class SaltAPIBuilderTest {
         Launcher launcher = mock(Launcher.class);
         BuildListener buildListener = mock(BuildListener.class);
         
-        assertTrue(builder.perform(jenkinsBuild, launcher, buildListener));
+        assertFalse(builder.perform(jenkinsBuild, launcher, buildListener));
     }
     
     @Test

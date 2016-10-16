@@ -4,7 +4,12 @@
 
     <f:entry title="Poll Time" field="pollTime"
       description="Default number of seconds to wait before polling job completion status on jobs waiting for completion">
-      <f:textbox default="120" value="${instance.pollTime}" />
+      <f:textbox default="10" value="${instance.pollTime}" />
+    </f:entry>
+    
+    <f:entry title="Timeout" field="timeoutTime"
+      description="Default number of seconds to wait before marking non-responding minions unresponsive and failing the build">
+      <f:textbox default="30" value="${instance.timeoutTime}" />
     </f:entry>
 
     <f:entry title="Display format" description="Configure display of SaltAPI response">

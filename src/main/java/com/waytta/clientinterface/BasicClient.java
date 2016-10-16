@@ -59,7 +59,7 @@ public class BasicClient {
     }
 
     public Boolean getBlockBuild() {
-        return blockBuild;
+        return blockBuild; 
     }
 
     public String getBatchSize() {
