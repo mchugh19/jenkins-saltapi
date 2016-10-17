@@ -11,6 +11,7 @@
   <f:entry title="Target" field="target">
     <f:textbox />
   </f:entry>
+  
   <f:entry title="Target Type" field="targetType">
     <select name="targetType">
       <f:option value="glob" selected="${instance.getTargettype() == 'glob'}">glob</f:option>

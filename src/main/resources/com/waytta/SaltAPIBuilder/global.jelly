@@ -16,6 +16,7 @@
       <select name="outputFormat">
         <f:option value="json" selected="${instance.outputFormat == 'json'}">json</f:option>
         <f:option value="yaml" selected="${instance.outputFormat == 'yaml'}">yaml</f:option>
+        <f:option value="none" selected="${instance.outputFormat == 'none'}">none</f:option>
       </select>
     </f:entry>
 

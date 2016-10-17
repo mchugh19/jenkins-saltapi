@@ -65,7 +65,7 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
     // Fields in config.jelly must match the parameter names in the
     // "DataBoundConstructor"
     @DataBoundConstructor
-    public SaltAPIBuilder(String servername, String authtype, String target, String targettype, String function, JSONObject clientInterfaces, String mods, String pillarvalue, String credentialsId) {
+    public SaltAPIBuilder(String servername, String authtype, String target, String targettype, String function, JSONObject clientInterfaces, String credentialsId) {
 
         this.servername = servername;
         this.authtype = authtype;
@@ -174,17 +174,14 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
 
     @Override
     public void perform(Run<?, ?> run, FilePath workspace, Launcher launcher, TaskListener listener) throws InterruptedException, IOException {
-        listener.getLogger().println("SaltStack: Started from Pipeline");
         boolean success = perform(run, launcher, listener);
         if (!success) {
-            throw new InterruptedException();
+            throw new hudson.AbortException();
         }
     }
 
     //    @Override
-    public boolean perform(Run build, Launcher launcher, TaskListener listener) {
-        // This is where you 'build' the project.
-        
+    public boolean perform(Run build, Launcher launcher, TaskListener listener) throws InterruptedException, IOException {
         String myOutputFormat = getDescriptor().getOutputFormat();
         String myClientInterface = clientInterfaceName;
         String myservername = Utils.paramorize(build, listener, servername);
@@ -240,9 +237,7 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
                 // Print out success
                 listener.getLogger().println("Running jid: " + jid);
             } catch (Exception e) {
-                listener.getLogger()
-                        .println("Problem: " + myfunction + " " + myarguments + " to " + myservername
-                        + " for " + mytarget + ":\n" + e + "\n\n" + httpResponse.toString(2));
+                listener.error(httpResponse.toString(2));
                 return false;
             }
 
@@ -272,9 +267,7 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
                 }
                 listener.getLogger().println(numMinionsDone + " minions are done");
             } catch (Exception e) {
-                listener.getLogger()
-                        .println("Problem: " + myfunction + " " + myarguments + " to " + myservername
-                        + " for " + mytarget + ":\n" + e + "\n\n" + httpResponse.toString(2));
+                listener.error(httpResponse.toString(2));
                 return false;
             }
 
@@ -292,8 +285,7 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
                 } catch (InterruptedException ex) {
                     Thread.currentThread().interrupt();
                     // Allow user to cancel job in jenkins interface
-                    listener.getLogger().println("Cancelling job");
-                    return false;
+                    throw new InterruptedException();
                 }
                 Integer oldMinionsDone = numMinionsDone;
                 httpResponse = Utils.getJSON(servername + "/jobs/" + jid, null, token);
@@ -309,19 +301,18 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
                 	} catch (InterruptedException ex) {
                 		Thread.currentThread().interrupt();
                         // Allow user to cancel job in jenkins interface
-                        listener.getLogger().println("Cancelling job");
-                        return false;
+                		throw new InterruptedException();
                 	}
                     httpResponse = Utils.getJSON(servername + "/jobs/" + jid, null, token);
                     returnArray = httpResponse.getJSONArray("return");
                     numMinionsDone = returnArray.getJSONObject(0).names().size();
                     if (numMinionsDone < numMinions) {
                     	JSONArray respondedMinions = returnArray.getJSONObject(0).names();
-                    	listener.getLogger().println(
-                                "Minions timed out. Failing\n\n");
-                    	// TODO only show minionsArray that aren't in respondedMinions
-                    	listener.getLogger().println("Responded: " + respondedMinions.toString());
-                    	listener.getLogger().println("Possible minions: " + minionsArray.toString());
+                    	for (int i = 0; i < respondedMinions.size(); ++i) {
+                    		minionsArray.discard(respondedMinions.get(i));
+                    	}
+                    	listener.error(
+                                "Minions timed out:\n" + minionsArray.toString() + "\n\n");
                     	jobSuccess = false;
                     	break;
                     }
@@ -345,11 +336,17 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
         boolean validFunctionExecution = Utils.validateFunctionCall(returnArray);
 
         if (!validFunctionExecution) {
-            listener.getLogger()
-                    .println("ERROR occurred!\nERROR: One or more minion did not return code 0\n\n");
+            listener.error("One or more minion did not return code 0\n");
             jobSuccess = false;
         }
 
+        // Just finish up if we don't output
+        if (myOutputFormat.equals("none")) {
+        	listener.getLogger().println("Completed " + myfunction + " " + myarguments + " for "
+                    + mytarget);
+        	return jobSuccess;
+        }
+        
         // Print results
         listener.getLogger().println("Response on " + myfunction + " " + myarguments + " for "
                 + mytarget + ":");
@@ -360,7 +357,7 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
             Yaml yaml = new Yaml();
             listener.getLogger().println(yaml.dump(outputObject));
         } else {
-            listener.getLogger().println("Error: Unknown output Format: x" + myOutputFormat + "x");
+            listener.error("Unknown output Format: x" + myOutputFormat + "x");
             jobSuccess = false;
         }
 
@@ -380,7 +377,8 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
     }
 
     private JSONObject prepareSaltFunction(Run build, TaskListener listener, String myClientInterface,
-                                           String mytarget, String myfunction, String myarguments, String mykwarguments) {
+                                           String mytarget, String myfunction, String myarguments, 
+                                           String mykwarguments) throws IOException, InterruptedException {
         JSONObject saltFunc = new JSONObject();
         saltFunc.put("client", myClientInterface);
         if (myClientInterface.equals("local_batch")) {
@@ -673,20 +671,22 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
         }
         
         public FormValidation doCheckPillarvalue(@QueryParameter String value) {
-        	// Check to see if paramorized. Ex: {{variable}}
-        	// This cannot be evaluated until build, so trust that all is well
-        	Pattern pattern = Pattern.compile("\\{\\{\\w+\\}\\}");
-            Matcher matcher = pattern.matcher(value);
-            if (matcher.matches()) {
-            	return FormValidation.ok();
-            }
-        	try {
-                // If value was already a jsonobject, treat it as such
-                JSON runPillarValue = JSONSerializer.toJSON(value);
-            } catch (JSONException e) {
-                // Otherwise it must have been a string
-            	return FormValidation.error("Pillar should be in JSON format");
-            }
+        	if (value.length() > 0) {
+	        	// Check to see if paramorized. Ex: {{variable}}
+	        	// This cannot be evaluated until build, so trust that all is well
+	        	Pattern pattern = Pattern.compile("\\{\\{\\w+\\}\\}");
+	            Matcher matcher = pattern.matcher(value);
+	            if (matcher.matches()) {
+	            	return FormValidation.ok();
+	            }
+	        	try {
+	                // If value was already a jsonobject, treat it as such
+	                JSON runPillarValue = JSONSerializer.toJSON(value);
+	            } catch (JSONException e) {
+	                // Otherwise it must have been a string
+	            	return FormValidation.error("Pillar should be in JSON format");
+	            }
+        	}
             return FormValidation.ok();
         }
 
