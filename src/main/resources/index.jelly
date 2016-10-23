@@ -1,6 +1,4 @@
-<!--
-  This view is used to render the installed plugins page.
--->
+<?jelly escape-by-default='true'?>
 <div>
   Builder to send a message to a SaltStack server via the Salt API
 </div>
