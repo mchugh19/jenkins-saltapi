@@ -1,41 +1,45 @@
 package com.waytta.clientinterface;
 
-public class BasicClient {
+import hudson.ExtensionPoint;
+import hudson.model.Describable;
+import hudson.model.Descriptor;
+import jenkins.model.Jenkins;
 
-    public static final int DEFAULT_JOB_POLL_TIME = 10;
+
+public class BasicClient implements ExtensionPoint, Describable<BasicClient> {
+	public Descriptor<BasicClient> getDescriptor() {
+        return Jenkins.getInstance().getDescriptor(getClass());
+    }
+
+    public static class BasicClientDescriptor extends Descriptor<BasicClient> {
+
+        public BasicClientDescriptor(Class<? extends BasicClient> clazz) {
+            super(clazz);
+        }
+
+        @Override
+        public String getDisplayName() {
+            if (clazz == LocalClient.class)
+                return "local";
+            if (clazz == LocalBatchClient.class)
+                return "local_batch";
+            if (clazz == RunnerClient.class)
+                return "runner";
+            return "";
+        }
+    }
+	
+
     private final String credentialsId;
     private String target;
     private String targetType;
     private final String function;
-    private String batchSize = "100%";
-    private String mods = "";
-    private String pillarvalue = "";
-    private Boolean blockBuild = Boolean.FALSE;
-    private Integer jobPollTime = DEFAULT_JOB_POLL_TIME;
-    
 
     public BasicClient(String credentialsId, String target, String targetType, String function) {
         this.credentialsId = credentialsId;
         this.target = target;
         this.targetType = targetType;
         this.function = function;
-    }
-
-
-    public String getPillarValue() {
-        return pillarvalue;
-    }
-
-    public void setPillarValue(String pillarvalue) {
-        this.pillarvalue = pillarvalue;
-    }
-
-    public String getMods() {
-        return mods;
-    }
-
-    public void setMods(String mods) {
-        this.mods = mods;
     }
 
     public String getTarget() {
@@ -56,30 +60,6 @@ public class BasicClient {
 
     public String getFunction() {
         return function;
-    }
-
-    public Boolean getBlockBuild() {
-        return blockBuild; 
-    }
-
-    public String getBatchSize() {
-        return batchSize;
-    }
-
-    public Integer getJobPollTime() {
-        return jobPollTime;
-    }
-
-    public void setBlockBuild(Boolean blockBuild) {
-        this.blockBuild = blockBuild;
-    }
-
-    public void setJobPollTime(Integer jobPollTime) {
-        this.jobPollTime = jobPollTime;
-    }
-
-    public void setBatchSize(String batchSize) {
-        this.batchSize = batchSize;
     }
 
     public String getCredentialsId() {

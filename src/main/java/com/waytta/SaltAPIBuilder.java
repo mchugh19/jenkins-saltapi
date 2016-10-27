@@ -140,23 +140,43 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
     }
 
     public Boolean getBlockbuild() {
-        return clientInterface.getBlockBuild();
+        if (clientInterfaceName.equals("local")) {
+        	return ((LocalClient) clientInterface).getBlockBuild();
+        } else {
+        	return false;
+        }
     }
 
     public String getBatchSize() {
-        return clientInterface.getBatchSize();
+        if (clientInterfaceName.equals("local_batch")) {
+        	return ((LocalBatchClient) clientInterface).getBatchSize();
+        } else {
+        	return "";
+        }
     }
 
     public Integer getJobPollTime() {
-        return clientInterface.getJobPollTime();
+        if (clientInterfaceName.equals("local")) {
+        	return ((LocalClient) clientInterface).getJobPollTime();
+        } else {
+        	return 0;
+        }
     }
     
     public String getMods() {
-    	return clientInterface.getMods();
+        if (clientInterfaceName.equals("runner")) {
+        	return ((RunnerClient) clientInterface).getMods();
+        } else {
+        	return "";
+        }
     }
     
     public String getPillarvalue() {
-    	return clientInterface.getPillarValue();
+        if (clientInterfaceName.equals("runner")) {
+        	return ((RunnerClient) clientInterface).getPillarvalue();
+        } else {
+        	return "";
+        }
     }
 
     public String getCredentialsId() {
@@ -189,7 +209,7 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
         String myfunction = Utils.paramorize(build, listener, clientInterface.getFunction());
         String myarguments = Utils.paramorize(build, listener, arguments);
         String mykwarguments = Utils.paramorize(build, listener, kwarguments);
-        Boolean myBlockBuild = clientInterface.getBlockBuild();
+        Boolean myBlockBuild = getBlockbuild();
         Boolean jobSuccess = true;
         Integer minionTimeout = getDescriptor().getTimeoutTime();
 
@@ -277,11 +297,11 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
                 // Don't print annoying messages unless we really are waiting for
                 // more minions to return
                 listener.getLogger().println(
-                        "Will check status every " + clientInterface.getJobPollTime() + " seconds...");
+                        "Will check status every " + getJobPollTime() + " seconds...");
             }
             while (numMinionsDone < numMinions) {
                 try {
-                    Thread.sleep(clientInterface.getJobPollTime() * 1000);
+                    Thread.sleep(getJobPollTime() * 1000);
                 } catch (InterruptedException ex) {
                     Thread.currentThread().interrupt();
                     // Allow user to cancel job in jenkins interface
@@ -342,8 +362,7 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
 
         // Just finish up if we don't output
         if (myOutputFormat.equals("none")) {
-        	listener.getLogger().println("Completed " + myfunction + " " + myarguments + " for "
-                    + mytarget);
+        	listener.getLogger().println("Completed " + myfunction + " " + myarguments);
         	return jobSuccess;
         }
         
@@ -382,14 +401,14 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
         JSONObject saltFunc = new JSONObject();
         saltFunc.put("client", myClientInterface);
         if (myClientInterface.equals("local_batch")) {
-            String mybatch = Utils.paramorize(build, listener, clientInterface.getBatchSize());
+            String mybatch = Utils.paramorize(build, listener, getBatchSize());
             saltFunc.put("batch", mybatch);
             listener.getLogger().println("Running in batch mode. Batch size: " + mybatch);
         }
         if (myClientInterface.equals("runner")) {
-            saltFunc.put("mods", clientInterface.getMods());
+            saltFunc.put("mods", getMods());
 
-            String myPillarvalue = Utils.paramorize(build, listener, clientInterface.getPillarValue());
+            String myPillarvalue = Utils.paramorize(build, listener, getPillarvalue());
             JSONObject jPillar = new JSONObject();
             // If value was already a jsonobject, treat it as such
             JSON runPillarValue = JSONSerializer.toJSON(myPillarvalue);

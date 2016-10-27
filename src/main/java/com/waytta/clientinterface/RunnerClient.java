@@ -1,13 +1,28 @@
 package com.waytta.clientinterface;
 
-public class RunnerClient extends BasicClient {
+import hudson.Extension;
 
-    public RunnerClient(String credentialsId, String function, String mods, String pillarValue){
+public class RunnerClient extends BasicClient {
+    private String mods = "";
+    private String pillarvalue = "";
+    
+    public RunnerClient(String credentialsId, String function, String mods, String pillarvalue){
         super(credentialsId, "", "", function);
 
-        setMods(mods);
         setTarget("");
         setTargetType("");
-        setPillarValue(pillarValue);
+        this.pillarvalue = pillarvalue;
+        this.mods = mods;
     }
+
+    public String getPillarvalue() {
+        return pillarvalue;
+    }
+
+    public String getMods() {
+        return mods;
+    }
+    
+    @Extension
+    public static final BasicClientDescriptor DESCRIPTOR = new BasicClientDescriptor(RunnerClient.class);
 }
