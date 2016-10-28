@@ -1,16 +1,16 @@
 package com.waytta.clientinterface;
 
 import hudson.Extension;
+import org.kohsuke.stapler.DataBoundConstructor;
 
 public class LocalBatchClient extends BasicClient {
     private String batchSize = "100%";
 
-    public LocalBatchClient(String credentialsId, String target, String targettype, String function, String batchSize) {
-        super(credentialsId, target, targettype, function);
+    @DataBoundConstructor
+    public LocalBatchClient(String target, String targetType, String batchSize) {
+        super(target, targetType);
 
         this.batchSize = batchSize;
-        setTarget(target);
-        setTargetType(targettype);
     }
     
     public String getBatchSize() {

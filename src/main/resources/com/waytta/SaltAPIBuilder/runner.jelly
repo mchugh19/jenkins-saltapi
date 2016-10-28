@@ -9,8 +9,5 @@
     <f:textbox />
   </f:entry>
 
-  <f:invisibleEntry>
-    <input name="clientInterface" type="hidden" value="runner"/>
-  </f:invisibleEntry>
-
+  <!-- <f:class-entry clazz="com.waytta.clientinterface.BasicClient$RunnerClient" /> -->
 </j:jelly>

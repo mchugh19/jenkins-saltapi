@@ -1,13 +1,15 @@
 package com.waytta.clientinterface;
 
 import hudson.Extension;
+import org.kohsuke.stapler.DataBoundConstructor;
 
 public class RunnerClient extends BasicClient {
     private String mods = "";
     private String pillarvalue = "";
     
-    public RunnerClient(String credentialsId, String function, String mods, String pillarvalue){
-        super(credentialsId, "", "", function);
+    @DataBoundConstructor
+    public RunnerClient(String mods, String pillarvalue){
+        super("", "");
 
         setTarget("");
         setTargetType("");

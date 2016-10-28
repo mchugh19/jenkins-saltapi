@@ -8,10 +8,6 @@
   <f:entry title="Poll Time" description="Number of seconds to wait before polling job completion status on jobs waiting for completion">
     <f:textbox field="jobPollTime" value="${instance.jobPollTime}" checkUrl="'descriptorByName/SaltAPIBuilder/checkPollTime?value='+escape(this.value)"  default="${descriptor.getPollTime()}" />
   </f:entry>
-
-  <f:invisibleEntry>
-    <input name="clientInterface" type="hidden" value="local"/>
-  </f:invisibleEntry>
   
   <f:entry title="Target" field="target">
     <f:textbox />
@@ -29,4 +25,5 @@
     </select>
   </f:entry>
 
+  <!-- <f:class-entry clazz="com.waytta.clientinterface.BasicClient$LocalClient" /> -->
 </j:jelly>

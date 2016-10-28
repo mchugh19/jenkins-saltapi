@@ -4,11 +4,17 @@ import hudson.ExtensionPoint;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
 import jenkins.model.Jenkins;
+import org.kohsuke.stapler.DataBoundConstructor;
+import hudson.DescriptorExtensionList;
 
 
 public class BasicClient implements ExtensionPoint, Describable<BasicClient> {
 	public Descriptor<BasicClient> getDescriptor() {
         return Jenkins.getInstance().getDescriptor(getClass());
+    }
+    
+    public DescriptorExtensionList<BasicClient,Descriptor<BasicClient>> getClientDescriptors() {
+        return Jenkins.getInstance().<BasicClient,Descriptor<BasicClient>>getDescriptorList(BasicClient.class);
     }
 
     public static class BasicClientDescriptor extends Descriptor<BasicClient> {
@@ -30,16 +36,13 @@ public class BasicClient implements ExtensionPoint, Describable<BasicClient> {
     }
 	
 
-    private final String credentialsId;
     private String target;
     private String targetType;
-    private final String function;
 
-    public BasicClient(String credentialsId, String target, String targetType, String function) {
-        this.credentialsId = credentialsId;
+    @DataBoundConstructor
+    public BasicClient(String target, String targetType) {
         this.target = target;
         this.targetType = targetType;
-        this.function = function;
     }
 
     public String getTarget() {
@@ -56,13 +59,5 @@ public class BasicClient implements ExtensionPoint, Describable<BasicClient> {
     
     public void setTargetType(String targetType) {
     	this.targetType = targetType;
-    }
-
-    public String getFunction() {
-        return function;
-    }
-
-    public String getCredentialsId() {
-        return credentialsId;
     }
 }

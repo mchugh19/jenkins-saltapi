@@ -56,47 +56,32 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
 
     private String servername;
     private String authtype;
+    private String function;
     private String arguments;
     private String kwarguments;
-    private final String clientInterfaceName;
-    private Boolean saveEnvVar = false;
+    private String clientInterfaceName;
     private BasicClient clientInterface;
+    private Boolean saveEnvVar = false;
+    private final String credentialsId;
+
 
     // Fields in config.jelly must match the parameter names in the
     // "DataBoundConstructor"
     @DataBoundConstructor
-    public SaltAPIBuilder(String servername, String authtype, String target, String targettype, String function, JSONObject clientInterfaces, String credentialsId) {
+    public SaltAPIBuilder(String servername, String authtype, String target, String targettype, String function, BasicClient clientInterface, String credentialsId) {
 
         this.servername = servername;
         this.authtype = authtype;
-
-        if (clientInterfaces.has("clientInterface")) {
-            this.clientInterfaceName = clientInterfaces.get("clientInterface").toString();
-        } else {
-            this.clientInterfaceName = "local";
-        }
-
-        switch (clientInterfaceName) {
-            case "local":
-                clientInterface = new LocalClient(credentialsId, clientInterfaces.get("target").toString(), clientInterfaces.get("targetType").toString(), function, clientInterfaces.getBoolean("blockbuild"), clientInterfaces.getInt("jobPollTime"));
-                break;
-
-            case "local_batch":
-                clientInterface = new LocalBatchClient(credentialsId, clientInterfaces.get("target").toString(), clientInterfaces.get("targetType").toString(), function, clientInterfaces.get("batchSize").toString());
-                break;
-
-            case "runner":
-                clientInterface = new RunnerClient(credentialsId, function, clientInterfaces.get("mods").toString(), clientInterfaces.get("pillarvalue").toString());
-                break;
-
-            default:
-                clientInterface = new BasicClient(credentialsId, target, targettype, function);
-        }
+        //this.clientInterfaceName = clientInterface.getDescriptor().getDisplayName();
+        this.clientInterfaceName = "local";
+        this.clientInterface = clientInterface;
+        this.credentialsId = credentialsId;
+        this.function = function;
     }
 
     /*
      * We'll use this from the <tt>config.jelly</tt>.
-     */
+     */    
     public String getServername() {
         return servername;
     }
@@ -114,7 +99,7 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
     }
 
     public String getFunction() {
-        return clientInterface.getFunction();
+        return function;
     }
 
     public String getArguments() {
@@ -135,12 +120,8 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
         this.kwarguments = kwarguments;
     }
 
-    public String getClientInterface() {
-        return clientInterfaceName;
-    }
-
     public Boolean getBlockbuild() {
-        if (clientInterfaceName.equals("local")) {
+        if (clientInterface instanceof LocalClient) {
         	return ((LocalClient) clientInterface).getBlockBuild();
         } else {
         	return false;
@@ -148,7 +129,7 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
     }
 
     public String getBatchSize() {
-        if (clientInterfaceName.equals("local_batch")) {
+        if (clientInterface instanceof LocalBatchClient) {
         	return ((LocalBatchClient) clientInterface).getBatchSize();
         } else {
         	return "";
@@ -156,7 +137,7 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
     }
 
     public Integer getJobPollTime() {
-        if (clientInterfaceName.equals("local")) {
+        if (clientInterface instanceof LocalClient) {
         	return ((LocalClient) clientInterface).getJobPollTime();
         } else {
         	return 0;
@@ -164,7 +145,7 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
     }
     
     public String getMods() {
-        if (clientInterfaceName.equals("runner")) {
+        if (clientInterface instanceof RunnerClient) {
         	return ((RunnerClient) clientInterface).getMods();
         } else {
         	return "";
@@ -172,7 +153,7 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
     }
     
     public String getPillarvalue() {
-        if (clientInterfaceName.equals("runner")) {
+        if (clientInterface instanceof RunnerClient) {
         	return ((RunnerClient) clientInterface).getPillarvalue();
         } else {
         	return "";
@@ -180,7 +161,7 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
     }
 
     public String getCredentialsId() {
-        return clientInterface.getCredentialsId();
+        return credentialsId;
     }
 
     @DataBoundSetter
@@ -206,7 +187,7 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
         String myClientInterface = clientInterfaceName;
         String myservername = Utils.paramorize(build, listener, servername);
         String mytarget = Utils.paramorize(build, listener, getTarget());
-        String myfunction = Utils.paramorize(build, listener, clientInterface.getFunction());
+        String myfunction = Utils.paramorize(build, listener, getFunction());
         String myarguments = Utils.paramorize(build, listener, arguments);
         String mykwarguments = Utils.paramorize(build, listener, kwarguments);
         Boolean myBlockBuild = getBlockbuild();

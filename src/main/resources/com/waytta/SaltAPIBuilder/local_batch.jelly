@@ -4,10 +4,6 @@
   <f:entry title="Batch Size" field="batchSize">
     <f:textbox default="50%" />
   </f:entry>
-
-  <f:invisibleEntry>
-    <input name="clientInterface" type="hidden" value="local_batch"/>
-  </f:invisibleEntry>
   
   <f:entry title="Target" field="target">
     <f:textbox />
@@ -26,4 +22,5 @@
     </select>
   </f:entry>
 
+  <!-- <f:class-entry clazz="com.waytta.clientinterface.BasicClient$LocalBatchClient" /> -->
 </j:jelly>
