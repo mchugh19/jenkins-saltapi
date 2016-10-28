@@ -25,11 +25,11 @@
     <f:textbox />
   </f:entry>
   <f:dropdownList name="clientInterface" title="Client Interface">
-          <j:forEach var="descriptor" items="${it.BasicClientDescriptors}" varStatus="loop">
-            <j:set var="clientInterface" value="${descriptor==currentBasicClient.descriptor?currentClient:null}"/>
+          <j:forEach var="descriptor" items="${it.clientDescriptors}" varStatus="loop">
+            <j:set var="clientInterface" value="${descriptor==currentClient.descriptor?currentClient:null}"/>
             <f:dropdownListBlock title="${descriptor.displayName}" value="${loop.index}"
                                  selected="${BasicClient!=null}" staplerClass="${descriptor.clazz.name}">
-              <!-- Include config.jelly for this fruit type -->
+              <!-- Include config.jelly for this type -->
               <st:include page="${descriptor.configPage}" from="${descriptor}"/>
             </f:dropdownListBlock>
           </j:forEach>
