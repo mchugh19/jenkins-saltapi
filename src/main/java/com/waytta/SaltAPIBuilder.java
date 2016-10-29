@@ -65,8 +65,6 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
     private final String credentialsId;
 
 
-    // Fields in config.jelly must match the parameter names in the
-    // "DataBoundConstructor"
     @DataBoundConstructor
     public SaltAPIBuilder(String servername, String authtype, String target, String targettype, String function, BasicClient clientInterface, String credentialsId) {
 
@@ -78,10 +76,7 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
         this.credentialsId = credentialsId;
         this.function = function;
     }
-
-    /*
-     * We'll use this from the <tt>config.jelly</tt>.
-     */    
+  
     public String getServername() {
         return servername;
     }
@@ -91,11 +86,25 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
     }
 
     public String getTarget() {
-        return clientInterface.getTarget();
+        if (clientInterface instanceof LocalClient) {
+        	return ((LocalClient) clientInterface).getTarget();
+        } else if (clientInterface instanceof LocalBatchClient) {
+        	return ((LocalBatchClient) clientInterface).getTarget();
+        }
+        else {
+        	return "";
+        }
     }
 
     public String getTargettype() {
-        return clientInterface.getTargetType();
+        if (clientInterface instanceof LocalClient) {
+        	return ((LocalClient) clientInterface).getTargetType();
+        } else if (clientInterface instanceof LocalBatchClient) {
+        	return ((LocalBatchClient) clientInterface).getTargetType();
+        }
+        else {
+        	return "";
+        }
     }
 
     public String getFunction() {
@@ -122,7 +131,7 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
 
     public Boolean getBlockbuild() {
         if (clientInterface instanceof LocalClient) {
-        	return ((LocalClient) clientInterface).getBlockBuild();
+        	return ((LocalClient) clientInterface).getBlockbuild();
         } else {
         	return false;
         }
@@ -172,6 +181,11 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
     public Boolean getSaveEnvVar() {
         return saveEnvVar;
     }
+    
+    public BasicClient getClientInterface() {
+    	return clientInterface;
+    }
+
 
     @Override
     public void perform(Run<?, ?> run, FilePath workspace, Launcher launcher, TaskListener listener) throws InterruptedException, IOException {
@@ -396,7 +410,7 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
             saltFunc.put("pillar", runPillarValue);
         }
         saltFunc.put("tgt", mytarget);
-        saltFunc.put("expr_form", clientInterface.getTargetType());
+        saltFunc.put("expr_form", getTargettype());
         saltFunc.put("fun", myfunction);
         addArgumentsToSaltFunction(myarguments, saltFunc);
         addKwArgumentsToSaltFunction(mykwarguments, saltFunc);
@@ -659,13 +673,6 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
             }
             if (Integer.parseInt(value) < 3) {
                 return FormValidation.warning("Specify a number larger than 3");
-            }
-            return FormValidation.ok();
-        }
-
-        public FormValidation doCheckBatchSize(@QueryParameter String value) {
-            if (value.length() == 0) {
-                return FormValidation.error("Please specify batch size");
             }
             return FormValidation.ok();
         }

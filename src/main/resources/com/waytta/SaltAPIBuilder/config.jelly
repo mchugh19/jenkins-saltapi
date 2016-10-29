@@ -20,34 +20,9 @@
    title="${%Test Connection}" progress="${%Testing...}"
    method="testConnection" with="servername,credentialsId,authtype" />
 
-  <j:set var="currentClient" value="${it.clientInterface}"/>
-    <f:entry title="${currentClient}" field="testname">
-    <f:textbox />
-  </f:entry>
-  <f:dropdownList name="clientInterface" title="Client Interface">
-          <j:forEach var="descriptor" items="${it.clientDescriptors}" varStatus="loop">
-            <j:set var="clientInterface" value="${descriptor==currentClient.descriptor?currentClient:null}"/>
-            <f:dropdownListBlock title="${descriptor.displayName}" value="${loop.index}"
-                                 selected="${BasicClient!=null}" staplerClass="${descriptor.clazz.name}">
-              <!-- Include config.jelly for this type -->
-              <st:include page="${descriptor.configPage}" from="${descriptor}"/>
-            </f:dropdownListBlock>
-          </j:forEach>
-        </f:dropdownList>
-        
-        <!--
-  <f:dropdownList name="clientInterface" title="Client Interface">
-    <f:dropdownListBlock title="local" selected="${instance.clientInterfaceName == 'local'}">
-      <st:include page="local.jelly" class="com.waytta.SaltAPIBuilder"/>
-    </f:dropdownListBlock>
-    <f:dropdownListBlock title="local_batch" selected="${instance.clientInterfaceName == 'local_batch'}">
-      <st:include page="local_batch.jelly" class="com.waytta.SaltAPIBuilder"/>
-    </f:dropdownListBlock>
-    <f:dropdownListBlock title="runner" selected="${instance.clientInterfaceName == 'runner'}">
-      <st:include page="runner.jelly" class="com.waytta.SaltAPIBuilder"/>
-    </f:dropdownListBlock>
-  </f:dropdownList>
-  -->
+
+  <f:dropdownDescriptorSelector title="Client Interface" field="clientInterface"
+    descriptors="${descriptor.clientDescriptors}" />
 
   <f:entry title="Function" field="function">
     <f:textbox default="cmd.run" />

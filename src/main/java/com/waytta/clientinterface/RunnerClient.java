@@ -9,10 +9,6 @@ public class RunnerClient extends BasicClient {
     
     @DataBoundConstructor
     public RunnerClient(String mods, String pillarvalue){
-        super("", "");
-
-        setTarget("");
-        setTargetType("");
         this.pillarvalue = pillarvalue;
         this.mods = mods;
     }
@@ -25,6 +21,6 @@ public class RunnerClient extends BasicClient {
         return mods;
     }
     
-    @Extension
-    public static final BasicClientDescriptor DESCRIPTOR = new BasicClientDescriptor(RunnerClient.class);
+    //@Extension
+    //public static final BasicClientDescriptor DESCRIPTOR = new BasicClientDescriptor(RunnerClient.class);
 }

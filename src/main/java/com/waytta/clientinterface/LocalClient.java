@@ -6,26 +6,34 @@ import org.kohsuke.stapler.DataBoundConstructor;
 public class LocalClient extends BasicClient {
     public static final int DEFAULT_JOB_POLL_TIME = 10;
     private Integer jobPollTime = DEFAULT_JOB_POLL_TIME;
-    private Boolean blockBuild = Boolean.FALSE;
+    private Boolean blockbuild = false;
+    private String target;
+    private String targetType;
 
     @DataBoundConstructor
     public LocalClient(Boolean blockbuild, Integer jobPollTime, String target, String targetType) {
-        super(target, targetType);
-
-        this.blockBuild = blockbuild;
+        this.blockbuild = blockbuild;
         this.jobPollTime = jobPollTime;
-        setTarget(target);
-        setTargetType(targetType);
+        this.target = target;
+        this.targetType = targetType;
     }
     
     public Integer getJobPollTime() {
         return jobPollTime;
     }
     
-    public Boolean getBlockBuild() {
-        return blockBuild; 
+    public Boolean getBlockbuild() {
+        return blockbuild; 
     }
     
-    @Extension
-    public static final BasicClientDescriptor DESCRIPTOR = new BasicClientDescriptor(LocalClient.class);
+    public String getTarget() {
+        return target;
+    }
+
+    public String getTargetType() {
+        return targetType;
+    }
+    
+    //@Extension
+    //public static final BasicClientDescriptor DESCRIPTOR = new BasicClientDescriptor(LocalClient.class);
 }
