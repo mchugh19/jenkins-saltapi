@@ -18,24 +18,15 @@ public class BasicClient implements ExtensionPoint, Describable<BasicClient> {
     	return Jenkins.getInstance().getDescriptorList(BasicClient.class);
     }
 
-    public abstract class BasicClientDescriptor extends Descriptor<BasicClient> {
-
+    public static class BasicClientDescriptor extends Descriptor<BasicClient> {
         public BasicClientDescriptor(Class<? extends BasicClient> clazz) {
             super(clazz);
         }
 
         @Override
         public String getDisplayName() {
-            if (clazz == LocalClient.class)
-                return "local";
-            if (clazz == LocalBatchClient.class)
-                return "local_batch";
-            if (clazz == RunnerClient.class)
-                return "runner";
             return "";
         }
     }
-	
-    protected BasicClient() {
-    }
+
 }

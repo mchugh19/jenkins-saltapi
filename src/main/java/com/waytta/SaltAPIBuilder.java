@@ -632,25 +632,8 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
             return FormValidation.ok();
         }
 
-        public FormValidation doCheckTarget(@QueryParameter String value) {
-            return validateFormStringField(value, "Please specify a salt target", "Isn't it too short?");
-        }
-
         public FormValidation doCheckFunction(@QueryParameter String value) {
-            return validateFormStringField(value, "Please specify a salt function", "Isn't it too short?");
-        }
-
-        private FormValidation validateFormStringField(String value, String lackOfFieldMessage,
-                String fieldToShortMessage) {
-            if (value.length() == 0) {
-                return FormValidation.error(lackOfFieldMessage);
-            }
-
-            if (value.length() < 3) {
-                return FormValidation.warning(fieldToShortMessage);
-            }
-
-            return FormValidation.ok();
+            return Utils.validateFormStringField(value, "Please specify a salt function", "Isn't it too short?");
         }
 
         public FormValidation doCheckPollTime(@QueryParameter String value) {
@@ -674,26 +657,6 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
             if (Integer.parseInt(value) < 3) {
                 return FormValidation.warning("Specify a number larger than 3");
             }
-            return FormValidation.ok();
-        }
-        
-        public FormValidation doCheckPillarvalue(@QueryParameter String value) {
-        	if (value.length() > 0) {
-	        	// Check to see if paramorized. Ex: {{variable}}
-	        	// This cannot be evaluated until build, so trust that all is well
-	        	Pattern pattern = Pattern.compile("\\{\\{\\w+\\}\\}");
-	            Matcher matcher = pattern.matcher(value);
-	            if (matcher.matches()) {
-	            	return FormValidation.ok();
-	            }
-	        	try {
-	                // If value was already a jsonobject, treat it as such
-	                JSON runPillarValue = JSONSerializer.toJSON(value);
-	            } catch (JSONException e) {
-	                // Otherwise it must have been a string
-	            	return FormValidation.error("Pillar should be in JSON format");
-	            }
-        	}
             return FormValidation.ok();
         }
 

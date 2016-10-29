@@ -4,6 +4,9 @@ import hudson.Extension;
 import org.kohsuke.stapler.DataBoundConstructor;
 import hudson.util.FormValidation;
 import org.kohsuke.stapler.QueryParameter;
+import org.jenkinsci.Symbol;
+
+import com.waytta.Utils;
 
 
 
@@ -31,18 +34,30 @@ public class LocalBatchClient extends BasicClient {
         return targetType;
     }
     
-    //@Extension
-    //public static final BasicClientDescriptor DESCRIPTOR = new BasicClientDescriptor(LocalBatchClient.class);
-    
-    //@Extension
-    //public static class DescriptorImpl extends BasicClientDescriptor {
-    @Extension 
-    public static final class DescriptorImpl extends BasicClient.BasicClientDescriptor {
+    @Symbol("batch")
+    public static final class DescriptorImpl extends BasicClientDescriptor {
+        private DescriptorImpl(Class<? extends BasicClient> clazz) {
+            super(clazz);
+        }
+        
+        @Override
+        public String getDisplayName() {
+        	return "local_batch";
+        }
+    	
+    	
     	public FormValidation doCheckBatchSize(@QueryParameter String value) {
     		if (value.length() == 0) {
     			return FormValidation.error("Please specify batch size");
     		}
     		return FormValidation.ok();
     	}
+    	
+        public FormValidation doCheckTarget(@QueryParameter String value) {
+            return Utils.validateFormStringField(value, "Please specify a salt target", "Isn't it too short?");
+        }
     }
+    
+    @Extension
+    public static final BasicClientDescriptor DESCRIPTOR = new DescriptorImpl(LocalBatchClient.class);
 }

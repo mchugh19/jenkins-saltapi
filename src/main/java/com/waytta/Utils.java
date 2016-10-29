@@ -19,6 +19,9 @@ import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import net.sf.json.JSONSerializer;
 
+import hudson.util.FormValidation;
+
+
 public class Utils {
     private static final String RETCODE_FIELD_NAME = "retcode";
 
@@ -229,5 +232,18 @@ public class Utils {
             }
         }
         return result;
+    }
+    
+    public static FormValidation validateFormStringField(String value, String lackOfFieldMessage,
+            String fieldToShortMessage) {
+        if (value.length() == 0) {
+            return FormValidation.error(lackOfFieldMessage);
+        }
+
+        if (value.length() < 3) {
+            return FormValidation.warning(fieldToShortMessage);
+        }
+
+        return FormValidation.ok();
     }
 }
