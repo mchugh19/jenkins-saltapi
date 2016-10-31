@@ -1,34 +1,43 @@
 package com.waytta.clientinterface;
 
 import hudson.Extension;
-import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import hudson.util.FormValidation;
 import org.jenkinsci.Symbol;
+import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.DataBoundConstructor;
 
 import com.waytta.Utils;
 
 public class LocalClient extends BasicClient {
     public static final int DEFAULT_JOB_POLL_TIME = 10;
-    private Integer jobPollTime = DEFAULT_JOB_POLL_TIME;
-    private Boolean blockbuild = false;
+    private int jobPollTime = DEFAULT_JOB_POLL_TIME;
+    private boolean blockbuild = false;
     private String target;
     private String targetType;
 
     @DataBoundConstructor
-    public LocalClient(Boolean blockbuild, Integer jobPollTime, String target, String targetType) {
-        this.blockbuild = blockbuild;
-        this.jobPollTime = jobPollTime;
+    public LocalClient(String target, String targetType) {
         this.target = target;
         this.targetType = targetType;
     }
     
-    public Integer getJobPollTime() {
+    public int getJobPollTime() {
         return jobPollTime;
     }
     
-    public Boolean getBlockbuild() {
+    @DataBoundSetter
+    public void setJobPollTime(int jobPollTime) {
+        this.jobPollTime = jobPollTime;
+    }
+    
+    public boolean getBlockbuild() {
         return blockbuild; 
+    }
+    
+    @DataBoundSetter
+    public void setBlockbuild(boolean blockbuild) {
+        this.blockbuild = blockbuild;
     }
     
     public String getTarget() {
@@ -38,11 +47,11 @@ public class LocalClient extends BasicClient {
     public String getTargetType() {
         return targetType;
     }
-    
-    @Symbol("local")
-    public static final class DescriptorImpl extends BasicClientDescriptor {
-        private DescriptorImpl(Class<? extends BasicClient> clazz) {
-            super(clazz);
+   
+    @Symbol("local") @Extension
+    public static class DescriptorImpl extends BasicClientDescriptor {
+    	public DescriptorImpl() {
+            super(LocalClient.class);
         }
         
         @Override
@@ -55,6 +64,5 @@ public class LocalClient extends BasicClient {
         }
     }
     
-    @Extension
-    public static final BasicClientDescriptor DESCRIPTOR = new DescriptorImpl(LocalClient.class);
+    public static final BasicClientDescriptor DESCRIPTOR = new DescriptorImpl();
 }

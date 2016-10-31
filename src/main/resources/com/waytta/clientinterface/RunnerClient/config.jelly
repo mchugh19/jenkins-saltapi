@@ -8,6 +8,4 @@
   <f:entry title="Pillar value" field="pillarvalue">
     <f:textbox />
   </f:entry>
-
-  <!-- <f:class-entry clazz="com.waytta.clientinterface.BasicClient$RunnerClient" /> -->
 </j:jelly>

@@ -9,7 +9,6 @@ import org.jenkinsci.Symbol;
 import com.waytta.Utils;
 
 
-
 public class LocalBatchClient extends BasicClient {
     private String batchSize = "100%";
     private String target;
@@ -34,10 +33,10 @@ public class LocalBatchClient extends BasicClient {
         return targetType;
     }
     
-    @Symbol("batch")
+    @Symbol("batch") @Extension
     public static final class DescriptorImpl extends BasicClientDescriptor {
-        private DescriptorImpl(Class<? extends BasicClient> clazz) {
-            super(clazz);
+        public DescriptorImpl() {
+            super(LocalBatchClient.class);
         }
         
         @Override
@@ -58,6 +57,5 @@ public class LocalBatchClient extends BasicClient {
         }
     }
     
-    @Extension
-    public static final BasicClientDescriptor DESCRIPTOR = new DescriptorImpl(LocalBatchClient.class);
+    public static final BasicClientDescriptor DESCRIPTOR = new DescriptorImpl();
 }

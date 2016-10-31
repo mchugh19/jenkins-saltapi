@@ -9,7 +9,36 @@ import hudson.DescriptorExtensionList;
 import java.util.List;
 
 
-public class BasicClient implements ExtensionPoint, Describable<BasicClient> {
+abstract public class BasicClient implements ExtensionPoint, Describable<BasicClient> {
+	public String getTarget() {
+		return "";
+	}
+	
+	public String getTargetType() {
+		return "";
+	}
+    
+	public boolean getBlockbuild() {
+		return false;
+	}
+    
+	public String getBatchSize() {
+		return "";
+	}
+    
+	public int getJobPollTime() {
+		return 10;
+	}
+    
+	public String getMods() {
+		return "";
+	}
+    
+	public String getPillarvalue() {
+		return "";
+	}
+
+	
 	public Descriptor<BasicClient> getDescriptor() {
         return Jenkins.getInstance().getDescriptor(getClass());
     }
@@ -18,15 +47,12 @@ public class BasicClient implements ExtensionPoint, Describable<BasicClient> {
     	return Jenkins.getInstance().getDescriptorList(BasicClient.class);
     }
 
-    public static class BasicClientDescriptor extends Descriptor<BasicClient> {
+    abstract static class BasicClientDescriptor extends Descriptor<BasicClient> {
         public BasicClientDescriptor(Class<? extends BasicClient> clazz) {
             super(clazz);
         }
 
-        @Override
-        public String getDisplayName() {
-            return "";
-        }
+        abstract public String getDisplayName();
     }
 
 }

@@ -61,7 +61,7 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
     private String kwarguments;
     private String clientInterfaceName;
     private BasicClient clientInterface;
-    private Boolean saveEnvVar = false;
+    private boolean saveEnvVar = false;
     private final String credentialsId;
 
 
@@ -70,8 +70,6 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
 
         this.servername = servername;
         this.authtype = authtype;
-        //this.clientInterfaceName = clientInterface.getDescriptor().getDisplayName();
-        this.clientInterfaceName = "local";
         this.clientInterface = clientInterface;
         this.credentialsId = credentialsId;
         this.function = function;
@@ -86,25 +84,11 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
     }
 
     public String getTarget() {
-        if (clientInterface instanceof LocalClient) {
-        	return ((LocalClient) clientInterface).getTarget();
-        } else if (clientInterface instanceof LocalBatchClient) {
-        	return ((LocalBatchClient) clientInterface).getTarget();
-        }
-        else {
-        	return "";
-        }
+    	return clientInterface.getTarget();
     }
 
     public String getTargettype() {
-        if (clientInterface instanceof LocalClient) {
-        	return ((LocalClient) clientInterface).getTargetType();
-        } else if (clientInterface instanceof LocalBatchClient) {
-        	return ((LocalBatchClient) clientInterface).getTargetType();
-        }
-        else {
-        	return "";
-        }
+    	return clientInterface.getTargetType();
     }
 
     public String getFunction() {
@@ -129,44 +113,24 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
         this.kwarguments = kwarguments;
     }
 
-    public Boolean getBlockbuild() {
-        if (clientInterface instanceof LocalClient) {
-        	return ((LocalClient) clientInterface).getBlockbuild();
-        } else {
-        	return false;
-        }
+    public boolean getBlockbuild() {
+    	return clientInterface.getBlockbuild();
     }
 
     public String getBatchSize() {
-        if (clientInterface instanceof LocalBatchClient) {
-        	return ((LocalBatchClient) clientInterface).getBatchSize();
-        } else {
-        	return "";
-        }
+    	return clientInterface.getBatchSize();
     }
 
-    public Integer getJobPollTime() {
-        if (clientInterface instanceof LocalClient) {
-        	return ((LocalClient) clientInterface).getJobPollTime();
-        } else {
-        	return 0;
-        }
+    public int getJobPollTime() {
+    	return clientInterface.getJobPollTime();
     }
     
     public String getMods() {
-        if (clientInterface instanceof RunnerClient) {
-        	return ((RunnerClient) clientInterface).getMods();
-        } else {
-        	return "";
-        }
+    	return clientInterface.getMods();
     }
     
     public String getPillarvalue() {
-        if (clientInterface instanceof RunnerClient) {
-        	return ((RunnerClient) clientInterface).getPillarvalue();
-        } else {
-        	return "";
-        }
+    	return clientInterface.getPillarvalue();
     }
 
     public String getCredentialsId() {
@@ -174,11 +138,11 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
     }
 
     @DataBoundSetter
-    public void setSaveEnvVar(Boolean saveEnvVar) {
+    public void setSaveEnvVar(boolean saveEnvVar) {
         this.saveEnvVar = saveEnvVar;
     }
 
-    public Boolean getSaveEnvVar() {
+    public boolean getSaveEnvVar() {
         return saveEnvVar;
     }
     
@@ -198,14 +162,15 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
     //    @Override
     public boolean perform(Run build, Launcher launcher, TaskListener listener) throws InterruptedException, IOException {
         String myOutputFormat = getDescriptor().getOutputFormat();
-        String myClientInterface = clientInterfaceName;
+        String myClientInterface = clientInterface.getDescriptor().getDisplayName();
+        //clientInterfaceName = "local";
         String myservername = Utils.paramorize(build, listener, servername);
         String mytarget = Utils.paramorize(build, listener, getTarget());
         String myfunction = Utils.paramorize(build, listener, getFunction());
         String myarguments = Utils.paramorize(build, listener, arguments);
         String mykwarguments = Utils.paramorize(build, listener, kwarguments);
-        Boolean myBlockBuild = getBlockbuild();
-        Boolean jobSuccess = true;
+        boolean myBlockBuild = getBlockbuild();
+        boolean jobSuccess = true;
         Integer minionTimeout = getDescriptor().getTimeoutTime();
 
         StandardUsernamePasswordCredentials credential = getCredentialById(getCredentialsId());
@@ -505,9 +470,9 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
     @Extension @Symbol("salt")
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
 
-        private int pollTime = 10;
-        private int timeoutTime = 30;
-        private String outputFormat = "json";
+        int pollTime = 10;
+        int timeoutTime = 30;
+        String outputFormat = "json";
 
         public DescriptorImpl() {
             load();

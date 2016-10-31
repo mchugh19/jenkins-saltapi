@@ -12,8 +12,6 @@ import net.sf.json.JSON;
 import net.sf.json.JSONException;
 import org.jenkinsci.Symbol;
 
-import com.waytta.clientinterface.BasicClient.BasicClientDescriptor;
-import com.waytta.clientinterface.LocalBatchClient.DescriptorImpl;
 
 public class RunnerClient extends BasicClient {
     private String mods = "";
@@ -33,10 +31,10 @@ public class RunnerClient extends BasicClient {
         return mods;
     }
     
-    @Symbol("runner")
+    @Symbol("runner") @Extension
     public static final class DescriptorImpl extends BasicClientDescriptor {
-        private DescriptorImpl(Class<? extends BasicClient> clazz) {
-            super(clazz);
+        public DescriptorImpl() {
+            super(RunnerClient.class);
         }
         
         @Override
@@ -63,9 +61,7 @@ public class RunnerClient extends BasicClient {
         	}
             return FormValidation.ok();
         }
-
     }
     
-    @Extension
-    public static final BasicClientDescriptor DESCRIPTOR = new DescriptorImpl(RunnerClient.class);
+    public static final BasicClientDescriptor DESCRIPTOR = new DescriptorImpl();
 }
