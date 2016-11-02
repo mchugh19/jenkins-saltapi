@@ -12,18 +12,8 @@
   <f:entry title="Target" field="target">
     <f:textbox />
   </f:entry>
-  <f:entry title="Target Type" field="targetType">
-    <select name="targetType">
-      <f:option value="glob" selected="${instance.getTargetType() == 'glob'}">glob</f:option>
-      <f:option value="pcre" selected="${instance.getTargetType() == 'pcre'}">pcre</f:option>
-      <f:option value="list" selected="${instance.getTargetType() == 'list'}">list</f:option>
-      <f:option value="grain" selected="${instance.getTargetType() == 'grain'}">grain</f:option>
-      <f:option value="pillar" selected="${instance.getTargetType() == 'pillar'}">pillar</f:option>
-      <f:option value="nodegroup" selected="${instance.getTargetType() == 'nodegroup'}">nodegroup</f:option>
-      <f:option value="range" selected="${instance.getTargetType() == 'range'}">range</f:option>
-      <f:option value="compound" selected="${instance.getTargetType() == 'compound'}">compound</f:option>
-    </select>
+ 
+  <f:entry field="targetType" title="Target Type">
+    <f:select />
   </f:entry>
-
-  <!-- <f:class-entry clazz="com.waytta.clientinterface.BasicClient$LocalClient" /> -->
 </j:jelly>

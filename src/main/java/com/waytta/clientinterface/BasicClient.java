@@ -7,6 +7,7 @@ import jenkins.model.Jenkins;
 import org.kohsuke.stapler.DataBoundConstructor;
 import hudson.DescriptorExtensionList;
 import java.util.List;
+import hudson.util.ListBoxModel;
 
 
 abstract public class BasicClient implements ExtensionPoint, Describable<BasicClient> {
@@ -47,12 +48,25 @@ abstract public class BasicClient implements ExtensionPoint, Describable<BasicCl
     	return Jenkins.getInstance().getDescriptorList(BasicClient.class);
     }
 
-    abstract static class BasicClientDescriptor extends Descriptor<BasicClient> {
+    abstract public static class BasicClientDescriptor extends Descriptor<BasicClient> {
         public BasicClientDescriptor(Class<? extends BasicClient> clazz) {
             super(clazz);
         }
 
         abstract public String getDisplayName();
-    }
+        
+        public ListBoxModel doFillTargetTypeItems() {
+            ListBoxModel items = new ListBoxModel();
+            items.add("glob", "glob");
+            items.add("pcre", "pcre");
+            items.add("list", "list");
+            items.add("grain", "grain");
+            items.add("pillar", "pillar");
+            items.add("nodegroup", "nodegroup");
+            items.add("range", "range");
+            items.add("compound", "compound");
 
+            return items;
+        }
+    }
 }
