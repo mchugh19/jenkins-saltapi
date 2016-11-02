@@ -59,7 +59,6 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
     private String function;
     private String arguments;
     private String kwarguments;
-    private String clientInterfaceName;
     private BasicClient clientInterface;
     private boolean saveEnvVar = false;
     private final String credentialsId;
@@ -163,7 +162,6 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
     public boolean perform(Run build, Launcher launcher, TaskListener listener) throws InterruptedException, IOException {
         String myOutputFormat = getDescriptor().getOutputFormat();
         String myClientInterface = clientInterface.getDescriptor().getDisplayName();
-        //clientInterfaceName = "local";
         String myservername = Utils.paramorize(build, listener, servername);
         String mytarget = Utils.paramorize(build, listener, getTarget());
         String myfunction = Utils.paramorize(build, listener, getFunction());
@@ -188,7 +186,6 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
         // Get an auth token
         token = Utils.getToken(myservername, authArray);
         if (token.contains("Error")) {
-        	// TODO lookup listener.error
             listener.error(token);
             return false;
         }

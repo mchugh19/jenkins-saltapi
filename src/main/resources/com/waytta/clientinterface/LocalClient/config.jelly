@@ -6,7 +6,7 @@
   </f:entry>
 
   <f:entry title="Poll Time" description="Number of seconds to wait before polling job completion status on jobs waiting for completion">
-    <f:textbox field="jobPollTime" value="${instance.jobPollTime}" checkUrl="'descriptorByName/SaltAPIBuilder/checkPollTime?value='+escape(this.value)"  default="${descriptor.getPollTime()}" />
+    <f:textbox field="jobPollTime" value="${instance.jobPollTime}" checkUrl="'descriptorByName/SaltAPIBuilder/checkPollTime?value='+escape(this.value)"  default="${descriptor.jobPollTime}" />
   </f:entry>
   
   <f:entry title="Target" field="target">

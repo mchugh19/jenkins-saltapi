@@ -8,6 +8,9 @@ import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import com.waytta.Utils;
+import com.waytta.SaltAPIBuilder;
+import jenkins.model.Jenkins;
+
 
 public class LocalClient extends BasicClient {
     public static final int DEFAULT_JOB_POLL_TIME = 10;
@@ -61,6 +64,12 @@ public class LocalClient extends BasicClient {
     	
         public FormValidation doCheckTarget(@QueryParameter String value) {
             return Utils.validateFormStringField(value, "Please specify a salt target", "Isn't it too short?");
+        }
+
+        // Set default to global default
+        public int getJobPollTime() {
+        	SaltAPIBuilder.DescriptorImpl sabd = (SaltAPIBuilder.DescriptorImpl) Jenkins.getInstance().getDescriptor( SaltAPIBuilder.class );
+        	return sabd.getPollTime();
         }
     }
     
