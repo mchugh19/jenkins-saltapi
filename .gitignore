@@ -1,5 +1,6 @@
 /target
-/work
+/work*
 .project
 .settings/
 .classpath
+/bin/

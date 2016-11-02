@@ -13,11 +13,14 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import hudson.EnvVars;
-import hudson.model.AbstractBuild;
-import hudson.model.BuildListener;
+import hudson.model.Run;
+import hudson.model.TaskListener;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import net.sf.json.JSONSerializer;
+
+import hudson.util.FormValidation;
+
 
 public class Utils {
     private static final String RETCODE_FIELD_NAME = "retcode";
@@ -108,37 +111,33 @@ public class Utils {
 
     // replaces $string with value of env($string). Used in conjunction with
     // parameterized builds
-    public static String paramorize(AbstractBuild build, BuildListener listener, String paramer) {
+    public static String paramorize(Run build, TaskListener listener, String paramer) throws IOException, InterruptedException {
         Pattern pattern = Pattern.compile("\\{\\{\\w+\\}\\}");
         Matcher matcher = pattern.matcher(paramer);
         while (matcher.find()) {
             // listener.getLogger().println("FOUND: "+matcher.group());
-            try {
-                EnvVars envVars;
-                envVars = build.getEnvironment(listener);
-                // remove leading {{
-                String replacementVar = matcher.group().substring(2);
-                // remove trailing }}
-                replacementVar = replacementVar.substring(0, replacementVar.length() - 2);
-                // using proper env var name, perform a lookup and save value
-                if (envVars.get(replacementVar) == null) {
-                    listener.getLogger().println("Error: Could not find environment variable");
-                }
-                replacementVar = envVars.get(replacementVar, "");
-                paramer = paramer.replace(matcher.group(), replacementVar);
-            } catch (IOException e1) {
-                listener.getLogger().println(e1);
-                return "Error: " + e1;
-            } catch (InterruptedException e1) {
-                listener.getLogger().println(e1);
-                return "Error: " + e1;
+            EnvVars envVars;
+            envVars = build.getEnvironment(listener);
+            // remove leading {{
+            String replacementVar = matcher.group().substring(2);
+            // remove trailing }}
+            replacementVar = replacementVar.substring(0, replacementVar.length() - 2);
+            // using proper env var name, perform a lookup and save value
+            if (envVars.get(replacementVar) == null) {
+                listener.fatalError("Could not find environment variable");
             }
+            replacementVar = envVars.get(replacementVar, "");
+            paramer = paramer.replace(matcher.group(), replacementVar);
         }
         return paramer;
     }
 
     public static boolean validateFunctionCall(JSONArray returnArray) {
         boolean result = true;
+        
+        if (returnArray.get(0).toString().contains("TypeError")) {
+            result = false;
+        }
 
         for (Object o : returnArray) {
             if (o instanceof Boolean) {
@@ -232,8 +231,19 @@ public class Utils {
                 }
             }
         }
-
         return result;
+    }
+    
+    public static FormValidation validateFormStringField(String value, String lackOfFieldMessage,
+            String fieldToShortMessage) {
+        if (value.length() == 0) {
+            return FormValidation.error(lackOfFieldMessage);
+        }
 
+        if (value.length() < 3) {
+            return FormValidation.warning(fieldToShortMessage);
+        }
+
+        return FormValidation.ok();
     }
 }

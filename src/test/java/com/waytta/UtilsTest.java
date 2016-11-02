@@ -2,15 +2,16 @@ package com.waytta;
 
 import java.util.Map;
 import java.util.HashMap;
+import java.io.IOException;
 
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.Before;
 
 import net.sf.json.JSONArray;
-import hudson.model.AbstractBuild;
-import hudson.model.BuildListener;
+import hudson.model.TaskListener;
 import hudson.EnvVars;
+import hudson.model.Run;
 
 import static org.mockito.Mockito.mock;
 import org.mockito.Mock;
@@ -295,29 +296,29 @@ public class UtilsTest {
     }
 
     @Mock
-    BuildListener listenerMock;
+    TaskListener listenerMock;
 
     @Mock
-    AbstractBuild jenkinsBuildMock;
+    Run jenkinsBuildMock;
 
     @Before
     public void setUp() throws Exception {
-        jenkinsBuildMock = mock(AbstractBuild.class);
-        listenerMock = mock(BuildListener.class);
+        jenkinsBuildMock = mock(Run.class);
+        listenerMock = mock(TaskListener.class);
         Map<String, String> env = new HashMap<String, String>();
         env.put("WORKINGENVVAR", "true");
-        when(jenkinsBuildMock.getBuildVariables()).thenReturn(env);
+        //when(jenkinsBuildMock.getBuildVariables()).thenReturn(env);
         when(jenkinsBuildMock.getEnvironment(listenerMock)).thenReturn(new EnvVars(env));
         when(listenerMock.getLogger()).thenReturn(System.out);
     }
 
     @Test
-    public void testParamorizeFoundMatch() {
+    public void testParamorizeFoundMatch() throws IOException, InterruptedException {
     	Assert.assertEquals(Utils.paramorize(jenkinsBuildMock, listenerMock, "{{WORKINGENVVAR}}"), "true");
     }
 
     @Test
-    public void testParamorizeMissing() {
+    public void testParamorizeMissing() throws IOException, InterruptedException {
     	Assert.assertEquals(Utils.paramorize(jenkinsBuildMock, listenerMock, "{{DOESNOTEXIST}}"), "");
     }
 
