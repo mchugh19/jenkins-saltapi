@@ -56,47 +56,25 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
 
     private String servername;
     private String authtype;
+    private String function;
     private String arguments;
     private String kwarguments;
-    private final String clientInterfaceName;
-    private Boolean saveEnvVar = false;
+    private String clientInterfaceName;
     private BasicClient clientInterface;
+    private boolean saveEnvVar = false;
+    private final String credentialsId;
 
-    // Fields in config.jelly must match the parameter names in the
-    // "DataBoundConstructor"
+
     @DataBoundConstructor
-    public SaltAPIBuilder(String servername, String authtype, String target, String targettype, String function, JSONObject clientInterfaces, String credentialsId) {
+    public SaltAPIBuilder(String servername, String authtype, String function, BasicClient clientInterface, String credentialsId) {
 
         this.servername = servername;
         this.authtype = authtype;
-
-        if (clientInterfaces.has("clientInterface")) {
-            this.clientInterfaceName = clientInterfaces.get("clientInterface").toString();
-        } else {
-            this.clientInterfaceName = "local";
-        }
-
-        switch (clientInterfaceName) {
-            case "local":
-                clientInterface = new LocalClient(credentialsId, clientInterfaces.get("target").toString(), clientInterfaces.get("targetType").toString(), function, clientInterfaces.getBoolean("blockbuild"), clientInterfaces.getInt("jobPollTime"));
-                break;
-
-            case "local_batch":
-                clientInterface = new LocalBatchClient(credentialsId, clientInterfaces.get("target").toString(), clientInterfaces.get("targetType").toString(), function, clientInterfaces.get("batchSize").toString());
-                break;
-
-            case "runner":
-                clientInterface = new RunnerClient(credentialsId, function, clientInterfaces.get("mods").toString(), clientInterfaces.get("pillarvalue").toString());
-                break;
-
-            default:
-                clientInterface = new BasicClient(credentialsId, target, targettype, function);
-        }
+        this.clientInterface = clientInterface;
+        this.credentialsId = credentialsId;
+        this.function = function;
     }
-
-    /*
-     * We'll use this from the <tt>config.jelly</tt>.
-     */
+  
     public String getServername() {
         return servername;
     }
@@ -106,15 +84,15 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
     }
 
     public String getTarget() {
-        return clientInterface.getTarget();
+    	return clientInterface.getTarget();
     }
 
     public String getTargettype() {
-        return clientInterface.getTargetType();
+    	return clientInterface.getTargetType();
     }
 
     public String getFunction() {
-        return clientInterface.getFunction();
+        return function;
     }
 
     public String getArguments() {
@@ -135,20 +113,16 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
         this.kwarguments = kwarguments;
     }
 
-    public String getClientInterface() {
-        return clientInterfaceName;
-    }
-
-    public Boolean getBlockbuild() {
-        return clientInterface.getBlockBuild();
+    public boolean getBlockbuild() {
+    	return clientInterface.getBlockbuild();
     }
 
     public String getBatchSize() {
-        return clientInterface.getBatchSize();
+    	return clientInterface.getBatchSize();
     }
 
-    public Integer getJobPollTime() {
-        return clientInterface.getJobPollTime();
+    public int getJobPollTime() {
+    	return clientInterface.getJobPollTime();
     }
     
     public String getMods() {
@@ -156,21 +130,26 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
     }
     
     public String getPillarvalue() {
-    	return clientInterface.getPillarValue();
+    	return clientInterface.getPillarvalue();
     }
 
     public String getCredentialsId() {
-        return clientInterface.getCredentialsId();
+        return credentialsId;
     }
 
     @DataBoundSetter
-    public void setSaveEnvVar(Boolean saveEnvVar) {
+    public void setSaveEnvVar(boolean saveEnvVar) {
         this.saveEnvVar = saveEnvVar;
     }
 
-    public Boolean getSaveEnvVar() {
+    public boolean getSaveEnvVar() {
         return saveEnvVar;
     }
+    
+    public BasicClient getClientInterface() {
+    	return clientInterface;
+    }
+
 
     @Override
     public void perform(Run<?, ?> run, FilePath workspace, Launcher launcher, TaskListener listener) throws InterruptedException, IOException {
@@ -183,14 +162,15 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
     //    @Override
     public boolean perform(Run build, Launcher launcher, TaskListener listener) throws InterruptedException, IOException {
         String myOutputFormat = getDescriptor().getOutputFormat();
-        String myClientInterface = clientInterfaceName;
+        String myClientInterface = clientInterface.getDescriptor().getDisplayName();
+        //clientInterfaceName = "local";
         String myservername = Utils.paramorize(build, listener, servername);
         String mytarget = Utils.paramorize(build, listener, getTarget());
-        String myfunction = Utils.paramorize(build, listener, clientInterface.getFunction());
+        String myfunction = Utils.paramorize(build, listener, getFunction());
         String myarguments = Utils.paramorize(build, listener, arguments);
         String mykwarguments = Utils.paramorize(build, listener, kwarguments);
-        Boolean myBlockBuild = clientInterface.getBlockBuild();
-        Boolean jobSuccess = true;
+        boolean myBlockBuild = getBlockbuild();
+        boolean jobSuccess = true;
         Integer minionTimeout = getDescriptor().getTimeoutTime();
 
         StandardUsernamePasswordCredentials credential = getCredentialById(getCredentialsId());
@@ -277,11 +257,11 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
                 // Don't print annoying messages unless we really are waiting for
                 // more minions to return
                 listener.getLogger().println(
-                        "Will check status every " + clientInterface.getJobPollTime() + " seconds...");
+                        "Will check status every " + getJobPollTime() + " seconds...");
             }
             while (numMinionsDone < numMinions) {
                 try {
-                    Thread.sleep(clientInterface.getJobPollTime() * 1000);
+                    Thread.sleep(getJobPollTime() * 1000);
                 } catch (InterruptedException ex) {
                     Thread.currentThread().interrupt();
                     // Allow user to cancel job in jenkins interface
@@ -342,8 +322,7 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
 
         // Just finish up if we don't output
         if (myOutputFormat.equals("none")) {
-        	listener.getLogger().println("Completed " + myfunction + " " + myarguments + " for "
-                    + mytarget);
+        	listener.getLogger().println("Completed " + myfunction + " " + myarguments);
         	return jobSuccess;
         }
         
@@ -382,21 +361,21 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
         JSONObject saltFunc = new JSONObject();
         saltFunc.put("client", myClientInterface);
         if (myClientInterface.equals("local_batch")) {
-            String mybatch = Utils.paramorize(build, listener, clientInterface.getBatchSize());
+            String mybatch = Utils.paramorize(build, listener, getBatchSize());
             saltFunc.put("batch", mybatch);
             listener.getLogger().println("Running in batch mode. Batch size: " + mybatch);
         }
         if (myClientInterface.equals("runner")) {
-            saltFunc.put("mods", clientInterface.getMods());
+            saltFunc.put("mods", getMods());
 
-            String myPillarvalue = Utils.paramorize(build, listener, clientInterface.getPillarValue());
+            String myPillarvalue = Utils.paramorize(build, listener, getPillarvalue());
             JSONObject jPillar = new JSONObject();
             // If value was already a jsonobject, treat it as such
             JSON runPillarValue = JSONSerializer.toJSON(myPillarvalue);
             saltFunc.put("pillar", runPillarValue);
         }
         saltFunc.put("tgt", mytarget);
-        saltFunc.put("expr_form", clientInterface.getTargetType());
+        saltFunc.put("expr_form", getTargettype());
         saltFunc.put("fun", myfunction);
         addArgumentsToSaltFunction(myarguments, saltFunc);
         addKwArgumentsToSaltFunction(mykwarguments, saltFunc);
@@ -491,9 +470,9 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
     @Extension @Symbol("salt")
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
 
-        private int pollTime = 10;
-        private int timeoutTime = 30;
-        private String outputFormat = "json";
+        int pollTime = 10;
+        int timeoutTime = 30;
+        String outputFormat = "json";
 
         public DescriptorImpl() {
             load();
@@ -618,25 +597,8 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
             return FormValidation.ok();
         }
 
-        public FormValidation doCheckTarget(@QueryParameter String value) {
-            return validateFormStringField(value, "Please specify a salt target", "Isn't it too short?");
-        }
-
         public FormValidation doCheckFunction(@QueryParameter String value) {
-            return validateFormStringField(value, "Please specify a salt function", "Isn't it too short?");
-        }
-
-        private FormValidation validateFormStringField(String value, String lackOfFieldMessage,
-                String fieldToShortMessage) {
-            if (value.length() == 0) {
-                return FormValidation.error(lackOfFieldMessage);
-            }
-
-            if (value.length() < 3) {
-                return FormValidation.warning(fieldToShortMessage);
-            }
-
-            return FormValidation.ok();
+            return Utils.validateFormStringField(value, "Please specify a salt function", "Isn't it too short?");
         }
 
         public FormValidation doCheckPollTime(@QueryParameter String value) {
@@ -660,33 +622,6 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
             if (Integer.parseInt(value) < 3) {
                 return FormValidation.warning("Specify a number larger than 3");
             }
-            return FormValidation.ok();
-        }
-
-        public FormValidation doCheckBatchSize(@QueryParameter String value) {
-            if (value.length() == 0) {
-                return FormValidation.error("Please specify batch size");
-            }
-            return FormValidation.ok();
-        }
-        
-        public FormValidation doCheckPillarvalue(@QueryParameter String value) {
-        	if (value.length() > 0) {
-	        	// Check to see if paramorized. Ex: {{variable}}
-	        	// This cannot be evaluated until build, so trust that all is well
-	        	Pattern pattern = Pattern.compile("\\{\\{\\w+\\}\\}");
-	            Matcher matcher = pattern.matcher(value);
-	            if (matcher.matches()) {
-	            	return FormValidation.ok();
-	            }
-	        	try {
-	                // If value was already a jsonobject, treat it as such
-	                JSON runPillarValue = JSONSerializer.toJSON(value);
-	            } catch (JSONException e) {
-	                // Otherwise it must have been a string
-	            	return FormValidation.error("Pillar should be in JSON format");
-	            }
-        	}
             return FormValidation.ok();
         }
 

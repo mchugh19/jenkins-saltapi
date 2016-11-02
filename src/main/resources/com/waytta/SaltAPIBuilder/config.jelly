@@ -20,17 +20,9 @@
    title="${%Test Connection}" progress="${%Testing...}"
    method="testConnection" with="servername,credentialsId,authtype" />
 
-  <f:dropdownList name="clientInterfaces" title="Client Interface">
-    <f:dropdownListBlock title="local" value="local" selected="${instance.clientInterface == 'local'}">
-      <st:include page="local.jelly" class="com.waytta.SaltAPIBuilder"/>
-    </f:dropdownListBlock>
-    <f:dropdownListBlock title="local_batch" value="local_batch" selected="${instance.clientInterface == 'local_batch'}">
-      <st:include page="local_batch.jelly" class="com.waytta.SaltAPIBuilder"/>
-    </f:dropdownListBlock>
-    <f:dropdownListBlock title="runner" value="runner" selected="${instance.clientInterface == 'runner'}">
-      <st:include page="runner.jelly" class="com.waytta.SaltAPIBuilder"/>
-    </f:dropdownListBlock>
-  </f:dropdownList>
+
+  <f:dropdownDescriptorSelector title="Client Interface" field="clientInterface"
+    descriptors="${descriptor.clientDescriptors}" />
 
   <f:entry title="Function" field="function">
     <f:textbox default="cmd.run" />

@@ -1,88 +1,72 @@
 package com.waytta.clientinterface;
 
-public class BasicClient {
+import hudson.ExtensionPoint;
+import hudson.model.Describable;
+import hudson.model.Descriptor;
+import jenkins.model.Jenkins;
+import org.kohsuke.stapler.DataBoundConstructor;
+import hudson.DescriptorExtensionList;
+import java.util.List;
+import hudson.util.ListBoxModel;
 
-    public static final int DEFAULT_JOB_POLL_TIME = 10;
-    private final String credentialsId;
-    private String target;
-    private String targetType;
-    private final String function;
-    private String batchSize = "100%";
-    private String mods = "";
-    private String pillarvalue = "";
-    private Boolean blockBuild = Boolean.FALSE;
-    private Integer jobPollTime = DEFAULT_JOB_POLL_TIME;
+
+abstract public class BasicClient implements ExtensionPoint, Describable<BasicClient> {
+	public String getTarget() {
+		return "";
+	}
+	
+	public String getTargetType() {
+		return "";
+	}
     
-
-    public BasicClient(String credentialsId, String target, String targetType, String function) {
-        this.credentialsId = credentialsId;
-        this.target = target;
-        this.targetType = targetType;
-        this.function = function;
-    }
-
-
-    public String getPillarValue() {
-        return pillarvalue;
-    }
-
-    public void setPillarValue(String pillarvalue) {
-        this.pillarvalue = pillarvalue;
-    }
-
-    public String getMods() {
-        return mods;
-    }
-
-    public void setMods(String mods) {
-        this.mods = mods;
-    }
-
-    public String getTarget() {
-        return target;
-    }
+	public boolean getBlockbuild() {
+		return false;
+	}
     
-    public void setTarget(String target) {
-    	this.target = target;
-    }
+	public String getBatchSize() {
+		return "";
+	}
+    
+	public int getJobPollTime() {
+		return 10;
+	}
+    
+	public String getMods() {
+		return "";
+	}
+    
+	public String getPillarvalue() {
+		return "";
+	}
 
-    public String getTargetType() {
-        return targetType;
+	
+	public Descriptor<BasicClient> getDescriptor() {
+        return Jenkins.getInstance().getDescriptor(getClass());
     }
     
-    public void setTargetType(String targetType) {
-    	this.targetType = targetType;
+    public List<BasicClientDescriptor> getClientDescriptors() {
+    	return Jenkins.getInstance().getDescriptorList(BasicClient.class);
     }
 
-    public String getFunction() {
-        return function;
-    }
+    abstract public static class BasicClientDescriptor extends Descriptor<BasicClient> {
+        public BasicClientDescriptor(Class<? extends BasicClient> clazz) {
+            super(clazz);
+        }
 
-    public Boolean getBlockBuild() {
-        return blockBuild; 
-    }
+        abstract public String getDisplayName();
+        
+        public ListBoxModel doFillTargetTypeItems() {
+            ListBoxModel items = new ListBoxModel();
+            items.add("glob", "glob");
+            items.add("pcre", "pcre");
+            items.add("list", "list");
+            items.add("grain", "grain");
+            items.add("pillar", "pillar");
+            items.add("nodegroup", "nodegroup");
+            items.add("range", "range");
+            items.add("compound", "compound");
 
-    public String getBatchSize() {
-        return batchSize;
-    }
-
-    public Integer getJobPollTime() {
-        return jobPollTime;
-    }
-
-    public void setBlockBuild(Boolean blockBuild) {
-        this.blockBuild = blockBuild;
-    }
-
-    public void setJobPollTime(Integer jobPollTime) {
-        this.jobPollTime = jobPollTime;
-    }
-
-    public void setBatchSize(String batchSize) {
-        this.batchSize = batchSize;
-    }
-
-    public String getCredentialsId() {
-        return credentialsId;
+            return items;
+        }
     }
 }

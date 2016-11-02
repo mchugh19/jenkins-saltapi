@@ -35,6 +35,8 @@ import static org.powermock.api.mockito.PowerMockito.mock;
 import static org.powermock.api.mockito.PowerMockito.mockStatic;
 import static org.powermock.api.mockito.PowerMockito.when;
 
+import com.waytta.clientinterface.*;
+
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({JSONObject.class, Jenkins.class, SaltAPIBuilder.DescriptorImpl.class, CredentialsProvider.class, Utils.class})
 public class SaltAPIBuilderTest {
@@ -44,54 +46,17 @@ public class SaltAPIBuilderTest {
     private static final String DEFAULT_CREDENTIAL_ID = "credentials_id";
     private static final hudson.util.Secret DEFAULT_CREDENTIAL_PASSWORD = Secret.fromString("junit_password");
     private static final String JSON_FORMAT = "json";
-    JSONObject clientInterfaces;
+    BasicClient clientInterfaces;
     private List<StandardUsernamePasswordCredentials> credentials;
 
 
     @Before
     public void setup(){
-        clientInterfaces = mock(JSONObject.class);                                          
-        when(clientInterfaces.has("clientInterface")).thenReturn(TRUE);
+        //clientInterfaces = mock(JSONObject.class);                                          
+        //when(clientInterfaces.has("clientInterface")).thenReturn(TRUE);
         credentials = new ArrayList<StandardUsernamePasswordCredentials>();
     }
-    
-    @Test
-    public void testConstructorWithAnyValueForClientInterface() {
-        when(clientInterfaces.get("clientInterface")).thenReturn("JUNIT");
-        SaltAPIBuilder builder = build();
-        validateBuilder(builder, "JUNIT");
-    }
 
-    @Test
-    public void testConstructorWithLocalBatchClientInterface() {
-        when(clientInterfaces.get("clientInterface")).thenReturn("local_batch");
-        when(clientInterfaces.get("batchSize")).thenReturn("JUNIT_BATCHSIZE");
-        when(clientInterfaces.get("target")).thenReturn("target");
-        when(clientInterfaces.get("targetType")).thenReturn("list");
-        SaltAPIBuilder builder = build();
-        validateBuilder(builder, "local_batch", "JUNIT_BATCHSIZE");
-        
-    }
-
-    @Test
-    public void testConstructorRunnerClientInterfaceAndPillar() {
-        when(clientInterfaces.get("clientInterface")).thenReturn("runner");
-        when(clientInterfaces.get("mods")).thenReturn("JUNIT_MODS");
-        when(clientInterfaces.get("pillarvalue")).thenReturn("JUNIT_PILLARVALUE");
-        SaltAPIBuilder builder = build();
-        validateBuilder(builder, "runner", "JUNIT_MODS", "JUNIT_PILLARVALUE");
-    }
-    
-    @Test
-    public void testConstructorWithOutClientInterface() {
-        when(clientInterfaces.has("clientInterface")).thenReturn(FALSE);
-        when(clientInterfaces.getBoolean("blockBuild")).thenReturn(FALSE);
-        when(clientInterfaces.getInt("jobPollTime")).thenReturn(TESTINT);
-        when(clientInterfaces.get("target")).thenReturn("target");
-        when(clientInterfaces.get("targetType")).thenReturn("list");
-        SaltAPIBuilder builder = build();
-        validateBuilder(builder, "local", TESTINT); 
-    }
 
     private void validateBuilder(SaltAPIBuilder builder,
                                  String clientInterfaces,
@@ -131,7 +96,7 @@ public class SaltAPIBuilderTest {
         assertFalse(builder.getBlockbuild());
         assertEquals(clientInterface, builder.getClientInterface());
         assertEquals(batchSize, builder.getBatchSize());
-        assertEquals(jobPollTime, builder.getJobPollTime());
+        //assertEquals(jobPollTime, builder.getJobPollTime());
         assertEquals(mods, builder.getMods());
         assertEquals(pillarValue, builder.getPillarvalue());
     }
@@ -140,8 +105,6 @@ public class SaltAPIBuilderTest {
         return new SaltAPIBuilder(
                 "servername",
                 "authtype",
-                "target",
-                "targettype",
                 "function",
                 clientInterfaces,
                 DEFAULT_CREDENTIAL_ID);
@@ -195,7 +158,7 @@ public class SaltAPIBuilderTest {
 
         AbstractBuild jenkinsBuild = mock(AbstractBuild.class);
         Launcher launcher = mock(Launcher.class);
-        when(Utils.paramorize(jenkinsBuild, buildListener, builder.getTarget())).thenReturn("junit_mytarget");
+        //when(Utils.paramorize(jenkinsBuild, buildListener, builder.getTarget())).thenReturn("junit_mytarget");
         when(Utils.paramorize(jenkinsBuild, buildListener, builder.getFunction())).thenReturn("junit_myfunction");
         when(Utils.paramorize(jenkinsBuild, buildListener, builder.getArguments())).thenReturn("junit_myarguments");
         when(Utils.paramorize(jenkinsBuild, buildListener, builder.getKwarguments())).thenReturn("junit_mykwarguments");
@@ -217,7 +180,7 @@ public class SaltAPIBuilderTest {
 
     private SaltAPIBuilder setupBuilderForDefaultPerform(String outputFormat) {
 
-        when(clientInterfaces.get("clientInterface")).thenReturn("JUNIT");
+        //when(clientInterfaces.get("clientInterface")).thenReturn("JUNIT");
         SaltAPIBuilder.DescriptorImpl descriptor = mock(SaltAPIBuilder.DescriptorImpl.class);
         mockStatic(Jenkins.class);
         Jenkins jenkins = mock(Jenkins.class);
