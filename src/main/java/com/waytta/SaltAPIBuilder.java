@@ -66,7 +66,7 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
 
 
     @DataBoundConstructor
-    public SaltAPIBuilder(String servername, String authtype, String target, String targettype, String function, BasicClient clientInterface, String credentialsId) {
+    public SaltAPIBuilder(String servername, String authtype, String function, BasicClient clientInterface, String credentialsId) {
 
         this.servername = servername;
         this.authtype = authtype;
