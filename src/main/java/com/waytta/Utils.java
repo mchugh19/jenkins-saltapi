@@ -26,7 +26,7 @@ public class Utils {
     private static final String RETCODE_FIELD_NAME = "retcode";
 
     // Thinger to connect to saltmaster over rest interface
-    public static JSONObject getJSON(String targetURL, JSONArray urlParams, String auth) {
+    public static JSONObject getJSON(String targetURL, JSONObject urlParams, String auth) {
         HttpURLConnection connection = null;
         JSONObject responseJSON = new JSONObject();
 
@@ -92,7 +92,7 @@ public class Utils {
         }
     }
 
-    public static String getToken(String servername, JSONArray auth) {
+    public static String getToken(String servername, JSONObject auth) {
         String token = new String();
         JSONObject httpResponse = getJSON(servername + "/login", auth, null);
         try {

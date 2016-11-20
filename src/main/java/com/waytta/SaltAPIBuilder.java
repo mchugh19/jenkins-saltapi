@@ -183,12 +183,12 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
 
         // Setup connection for auth
         String token = new String();
-        JSONArray authArray = createAuthArray(credential);
+        JSONObject auth = createAuthArray(credential);
         JSONObject httpResponse = new JSONObject();
         JSONArray returnArray = new JSONArray();
 
         // Get an auth token
-        token = Utils.getToken(myservername, authArray);
+        token = Utils.getToken(myservername, auth);
         if (token.contains("Error")) {
             listener.error(token);
             return false;
@@ -198,17 +198,14 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
         JSONObject saltFunc = prepareSaltFunction(build, listener, myClientInterface, mytarget, myfunction, myarguments,
                 mykwarguments);
 
-        JSONArray saltArray = new JSONArray();
-        saltArray.add(saltFunc);
-
-        LOGGER.log(Level.FINE, "Sending JSON: " + saltArray.toString());
+        LOGGER.log(Level.FINE, "Sending JSON: " + saltFunc.toString());
 
         // blocking request
         if (myBlockBuild) {
             String jid = new String();
             // Send request to /minion url. This will give back a jid which we
             // will need to poll and lookup for completion
-            httpResponse = Utils.getJSON(myservername + "/minions", saltArray, token);
+            httpResponse = Utils.getJSON(myservername + "/minions", saltFunc, token);
             try {
                 returnArray = httpResponse.getJSONArray("return");
                 for (Object o : returnArray) {
@@ -301,7 +298,7 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
             }
         } else {
             // Just send a salt request. Don't wait for reply
-            httpResponse = Utils.getJSON(myservername, saltArray, token);
+            httpResponse = Utils.getJSON(myservername, saltFunc, token);
             returnArray = httpResponse.getJSONArray("return");
         }
         // Finished processing
@@ -345,15 +342,13 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
         return jobSuccess;
     }
 
-    private JSONArray createAuthArray(StandardUsernamePasswordCredentials credential) {
-        JSONArray authArray = new JSONArray();
+    private JSONObject createAuthArray(StandardUsernamePasswordCredentials credential) {
         JSONObject auth = new JSONObject();
         auth.put("username", credential.getUsername());
         auth.put("password", credential.getPassword().getPlainText());
         auth.put("eauth", authtype);
-        authArray.add(auth);
 
-        return authArray;
+        return auth;
     }
 
     private JSONObject prepareSaltFunction(Run build, TaskListener listener, String myClientInterface,
@@ -533,13 +528,11 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
             }
 
             if (!servername.matches("\\{\\{\\w+\\}\\}")) {
-                JSONArray authArray = new JSONArray();
                 JSONObject auth = new JSONObject();
                 auth.put("username", usedCredential.getUsername());
                 auth.put("password", usedCredential.getPassword().getPlainText());
                 auth.put("eauth", authtype);
-                authArray.add(auth);
-                String token = Utils.getToken(servername, authArray);
+                String token = Utils.getToken(servername, auth);
                 if (token.contains("Error")) {
                     return FormValidation.error("Client error: " + token);
                 }
