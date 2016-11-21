@@ -1,6 +1,7 @@
 package com.waytta;
 
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -197,8 +198,9 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
         } else if (myClientInterface.equals("hook")) {
         	// publish event to salt event bus to /hook
         	String myTag = Utils.paramorize(build, listener, getTag());
-        	// Cleanup myTag to remove extra characters
-        	//myTag = myTag.replaceAll("\n", "");
+        	// Cleanup myTag to remove duplicate / and urlencode
+        	myTag = myTag.replaceAll("^/", "");
+        	myTag = URLEncoder.encode(myTag, "UTF-8");
         	httpResponse = Utils.getJSON(myservername + "/hook/" + myTag, saltFunc, token);
         	returnArray.add(httpResponse);
         } else {
