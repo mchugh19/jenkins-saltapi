@@ -18,11 +18,22 @@ public class LocalClient extends BasicClient {
     private boolean blockbuild = false;
     private String target;
     private String targetType;
+    private String function;
+    private String arguments;
 
     @DataBoundConstructor
-    public LocalClient(String target, String targetType) {
-        this.target = target;
+    public LocalClient(String function, String arguments, String target, String targetType) {
+        this.function = function;
+        this.arguments = arguments;
+    	this.target = target;
         this.targetType = targetType;
+    }
+    public String getFunction() {
+    	return function;
+    }
+    
+    public String getArguments() {
+    	return arguments;
     }
     
     public int getJobPollTime() {
@@ -60,6 +71,10 @@ public class LocalClient extends BasicClient {
         @Override
         public String getDisplayName() {
         	return "local";
+        }
+        
+        public FormValidation doCheckFunction(@QueryParameter String value) {
+            return Utils.validateFormStringField(value, "Please specify a salt function", "Isn't it too short?");
         }
     	
         public FormValidation doCheckTarget(@QueryParameter String value) {

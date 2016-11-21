@@ -65,13 +65,11 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
 
 
     @DataBoundConstructor
-    public SaltAPIBuilder(String servername, String authtype, String function, BasicClient clientInterface, String credentialsId) {
-
+    public SaltAPIBuilder(String servername, String authtype, BasicClient clientInterface, String credentialsId) {
         this.servername = servername;
         this.authtype = authtype;
         this.clientInterface = clientInterface;
         this.credentialsId = credentialsId;
-        this.function = function;
     }
   
     public String getServername() {
@@ -91,25 +89,11 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
     }
 
     public String getFunction() {
-        return function;
+        return clientInterface.getFunction();
     }
 
     public String getArguments() {
-        return arguments;
-    }
-
-    @DataBoundSetter
-    public void setArguments(String arguments) {
-        this.arguments = arguments;
-    }
-
-    public String getKwarguments() {
-        return kwarguments;
-    }
-
-    @DataBoundSetter
-    public void setKwarguments(String kwarguments) {
-        this.kwarguments = kwarguments;
+        return clientInterface.getArguments();
     }
 
     public boolean getBlockbuild() {
@@ -169,8 +153,8 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
         String myservername = Utils.paramorize(build, listener, servername);
         String mytarget = Utils.paramorize(build, listener, getTarget());
         String myfunction = Utils.paramorize(build, listener, getFunction());
-        String myarguments = Utils.paramorize(build, listener, arguments);
-        String mykwarguments = Utils.paramorize(build, listener, kwarguments);
+        String myarguments = Utils.paramorize(build, listener, getArguments());
+        
         boolean myBlockBuild = getBlockbuild();
         boolean jobSuccess = true;
         Integer minionTimeout = getDescriptor().getTimeoutTime();
@@ -195,8 +179,7 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
         }
         
         // If we got this far, auth must have been good and we've got a token
-        JSONObject saltFunc = prepareSaltFunction(build, listener, myClientInterface, mytarget, myfunction, myarguments,
-                mykwarguments);
+        JSONObject saltFunc = prepareSaltFunction(build, listener, myClientInterface, mytarget, myfunction, myarguments);
 
         LOGGER.log(Level.FINE, "Sending JSON: " + saltFunc.toString());
 
@@ -352,8 +335,8 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
     }
 
     private JSONObject prepareSaltFunction(Run build, TaskListener listener, String myClientInterface,
-                                           String mytarget, String myfunction, String myarguments, 
-                                           String mykwarguments) throws IOException, InterruptedException {
+                                           String mytarget, String myfunction, String myarguments 
+                                           ) throws IOException, InterruptedException {
         JSONObject saltFunc = new JSONObject();
         saltFunc.put("client", myClientInterface);
 
@@ -382,22 +365,26 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
         saltFunc.put("expr_form", getTargettype());
         saltFunc.put("fun", myfunction);
         addArgumentsToSaltFunction(myarguments, saltFunc);
-        addKwArgumentsToSaltFunction(mykwarguments, saltFunc);
 
         return saltFunc;
     }
 
-    private void addKwArgumentsToSaltFunction(String mykwarguments, JSONObject saltFunc) {
-        if (mykwarguments.length() > 0) {
-            Map<String, String> kwArgs = new HashMap<String, String>();
-            // spit on comma seperated not inside of single and double quotes
-            String[] kwargItems = mykwarguments.split(",(?=(?:[^'\"]|'[^']*'|\"[^\"]*\")*$)");
-            for (String kwarg : kwargItems) {
-                // remove spaces at begining or end
-                kwarg = kwarg.replaceAll("^\\s+|\\s+$", "");
-                kwarg = kwarg.replaceAll("\"|\\\"", "");
-                if (kwarg.contains("=")) {
-                    String[] kwString = kwarg.split("=");
+
+    private void addArgumentsToSaltFunction(String myarguments, JSONObject saltFunc) {
+        if (myarguments.length() > 0) {
+            JSONObject fullKwJSON = new JSONObject();
+
+            // spit on space separated not inside of single and double quotes
+            String[] argItems = myarguments.split("\\s+(?=(?:[^'\"]|'[^']*'|\"[^\"]*\")*$)");
+
+            for (String arg : argItems) {
+                // remove spaces at beginning or end
+                arg = arg.replaceAll("^\\s+|\\s+$", "");
+                // if string wrapped in quotes, remove them since adding to list
+                // re-quotes
+                arg = arg.replaceAll("(^')|(^\")|('$)|(\"$)", "");
+                if (arg.contains("=")) {
+                    String[] kwString = arg.split("=");
                     if (kwString.length > 2) {
                         // kwarg contained more than one =. Let's put the string
                         // back together
@@ -409,40 +396,35 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
                             }
                             // add the second item
                             if (kwItem == kwString[1]) {
+                            	// again remove any wrapping quotes
+                                kwItem = kwItem.replaceAll("(^')|(^\")|('$)|(\"$)", "");
                                 kwFull += kwItem;
                                 continue;
                             }
                             // add all other items with an = to rejoin
                             kwFull += "=" + kwItem;
                         }
-                        kwArgs.put(kwString[0], kwFull);
+                        fullKwJSON.put(kwString[0], kwFull);
                     } else {
-                        kwArgs.put(kwString[0], kwString[1]);
+                    	// again remove any wrapping quotes
+                        kwString[1] = kwString[1].replaceAll("(^')|(^\")|('$)|(\"$)", "");
+        	        	try {
+        	                // If value was already a jsonobject, treat it as such
+        	                JSON kwJSON = JSONSerializer.toJSON(kwString[1]);
+        	                // Rejoin key and json object
+        	                fullKwJSON.element(kwString[0], kwJSON);
+        	            } catch (JSONException e) {
+        	                // Otherwise it must have been a string
+                            fullKwJSON.put(kwString[0], kwString[1]);
+        	            }
                     }
+                } else {
+                	// Add any args to json message
+                	saltFunc.accumulate("arg", arg);
                 }
             }
-            // Add any kwargs to json message
-            saltFunc.element("kwarg", kwArgs);
-        }
-    }
-
-    private void addArgumentsToSaltFunction(String myarguments, JSONObject saltFunc) {
-        if (myarguments.length() > 0) {
-            List<String> saltArguments = new ArrayList<String>();
-            // spit on comma seperated not inside of single and double quotes
-            String[] argItems = myarguments.split(",(?=(?:[^'\"]|'[^']*'|\"[^\"]*\")*$)");
-
-            for (String arg : argItems) {
-                // remove spaces at begining or end
-                arg = arg.replaceAll("^\\s+|\\s+$", "");
-                // if string wrapped in quotes, remove them since adding to list
-                // re-quotes
-                arg = arg.replaceAll("(^')|(^\")|('$)|(\"$)", "");
-                saltArguments.add(arg);
-            }
-
-            // Add any args to json message
-            saltFunc.element("arg", saltArguments);
+            // Now that loops have completed, add kwarg object
+            saltFunc.element("kwarg", fullKwJSON);
         }
     }
     
@@ -597,10 +579,6 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
             }
 
             return FormValidation.ok();
-        }
-
-        public FormValidation doCheckFunction(@QueryParameter String value) {
-            return Utils.validateFormStringField(value, "Please specify a salt function", "Isn't it too short?");
         }
 
         public FormValidation doCheckPollTime(@QueryParameter String value) {
