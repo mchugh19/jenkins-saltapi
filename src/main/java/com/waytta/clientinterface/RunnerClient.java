@@ -17,17 +17,17 @@ import org.jenkinsci.Symbol;
 
 
 public class RunnerClient extends BasicClient {
-    private String function;
-    private String arguments;
+	private String function;
+	private String arguments;
 	private String mods = "";
-    private String pillarvalue = "";
+	private String pillarvalue = "";
     
     @DataBoundConstructor
     public RunnerClient(String function, String arguments, String mods, String pillarvalue){
-        this.function = function;
-        this.arguments = arguments;
+    	this.function = function;
+    	this.arguments = arguments;
     	this.pillarvalue = pillarvalue;
-        this.mods = mods;
+    	this.mods = mods;
     }
     public String getFunction() {
     	return function;

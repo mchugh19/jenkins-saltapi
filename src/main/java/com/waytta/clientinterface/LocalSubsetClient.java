@@ -15,19 +15,19 @@ import com.waytta.Utils;
 
 
 public class LocalSubsetClient extends BasicClient {
-    private String function;
-    private String arguments;
+	private String function;
+	private String arguments;
 	private String subset = "1";
-    private String target;
-    private String targetType;
+	private String target;
+	private String targetType;
 
     @DataBoundConstructor
     public LocalSubsetClient(String function, String arguments, String subset, String target, String targetType) {
-        this.function = function;
-        this.arguments = arguments;
+    	this.function = function;
+    	this.arguments = arguments;
     	this.subset = subset;
     	this.target = target;
-        this.targetType = targetType;
+    	this.targetType = targetType;
     }
     public String getFunction() {
     	return function;

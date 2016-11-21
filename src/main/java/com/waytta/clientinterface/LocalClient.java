@@ -13,20 +13,20 @@ import jenkins.model.Jenkins;
 
 
 public class LocalClient extends BasicClient {
-    public static final int DEFAULT_JOB_POLL_TIME = 10;
-    private int jobPollTime = DEFAULT_JOB_POLL_TIME;
-    private boolean blockbuild = false;
-    private String target;
-    private String targetType;
-    private String function;
-    private String arguments;
+	public static final int DEFAULT_JOB_POLL_TIME = 10;
+	private int jobPollTime = DEFAULT_JOB_POLL_TIME;
+	private boolean blockbuild = false;
+	private String target;
+	private String targetType;
+	private String function;
+	private String arguments;
 
     @DataBoundConstructor
     public LocalClient(String function, String arguments, String target, String targetType) {
-        this.function = function;
-        this.arguments = arguments;
+    	this.function = function;
+    	this.arguments = arguments;
     	this.target = target;
-        this.targetType = targetType;
+    	this.targetType = targetType;
     }
     public String getFunction() {
     	return function;

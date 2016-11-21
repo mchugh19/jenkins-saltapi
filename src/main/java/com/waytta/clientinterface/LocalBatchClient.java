@@ -10,19 +10,19 @@ import com.waytta.Utils;
 
 
 public class LocalBatchClient extends BasicClient {
-    private String function;
-    private String arguments;
+	private String function;
+	private String arguments;
 	private String batchSize = "100%";
-    private String target;
-    private String targetType;
+	private String target;
+	private String targetType;
 
     @DataBoundConstructor
     public LocalBatchClient(String function, String arguments, String batchSize, String target, String targetType) {
-        this.function = function;
-        this.arguments = arguments;
+    	this.function = function;
+    	this.arguments = arguments;
     	this.batchSize = batchSize;
-        this.target = target;
-        this.targetType = targetType;
+    	this.target = target;
+    	this.targetType = targetType;
     }
     
     public String getFunction() {
