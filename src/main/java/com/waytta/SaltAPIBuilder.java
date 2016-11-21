@@ -136,6 +136,14 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
     public BasicClient getClientInterface() {
     	return clientInterface;
     }
+    
+    public String getPost() {
+    	return clientInterface.getPost();
+    }
+    
+    public String getTag() {
+    	return clientInterface.getTag();
+    }
 
 
     @Override
@@ -154,6 +162,7 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
         String mytarget = Utils.paramorize(build, listener, getTarget());
         String myfunction = Utils.paramorize(build, listener, getFunction());
         String myarguments = Utils.paramorize(build, listener, getArguments());
+    	String myTag = Utils.paramorize(build, listener, getTag());
         
         boolean myBlockBuild = getBlockbuild();
         boolean jobSuccess = true;
@@ -359,6 +368,9 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
         	saltFunc.put("sub", Integer.parseInt(mySubset));
             listener.getLogger().println("Running in subset mode. Subset size: " + mySubset);
             break;
+        case "hook":
+        	String myPost = Utils.paramorize(build, listener, getPost());
+        	saltFunc.put(key, value)
         }
 
         saltFunc.put("tgt", mytarget);
