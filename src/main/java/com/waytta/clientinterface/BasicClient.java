@@ -11,6 +11,14 @@ import hudson.util.ListBoxModel;
 
 
 abstract public class BasicClient implements ExtensionPoint, Describable<BasicClient> {
+	public String getFunction() {
+		return "";
+	}
+	
+	public String getArguments() {
+		return "";
+	}
+	
 	public String getTarget() {
 		return "";
 	}
@@ -41,6 +49,14 @@ abstract public class BasicClient implements ExtensionPoint, Describable<BasicCl
 
 	public String getSubset() {
 		return "1";
+	}
+	
+	public String getTag() {
+		return "";
+	}
+	
+	public String getPost() {
+		return "";
 	}
 	
 	public Descriptor<BasicClient> getDescriptor() {

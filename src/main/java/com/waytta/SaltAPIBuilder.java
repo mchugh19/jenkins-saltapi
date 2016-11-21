@@ -1,6 +1,7 @@
 package com.waytta;
 
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -65,13 +66,11 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
 
 
     @DataBoundConstructor
-    public SaltAPIBuilder(String servername, String authtype, String function, BasicClient clientInterface, String credentialsId) {
-
+    public SaltAPIBuilder(String servername, String authtype, BasicClient clientInterface, String credentialsId) {
         this.servername = servername;
         this.authtype = authtype;
         this.clientInterface = clientInterface;
         this.credentialsId = credentialsId;
-        this.function = function;
     }
   
     public String getServername() {
@@ -91,25 +90,11 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
     }
 
     public String getFunction() {
-        return function;
+        return clientInterface.getFunction();
     }
 
     public String getArguments() {
-        return arguments;
-    }
-
-    @DataBoundSetter
-    public void setArguments(String arguments) {
-        this.arguments = arguments;
-    }
-
-    public String getKwarguments() {
-        return kwarguments;
-    }
-
-    @DataBoundSetter
-    public void setKwarguments(String kwarguments) {
-        this.kwarguments = kwarguments;
+        return clientInterface.getArguments();
     }
 
     public boolean getBlockbuild() {
@@ -152,6 +137,14 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
     public BasicClient getClientInterface() {
     	return clientInterface;
     }
+    
+    public String getPost() {
+    	return clientInterface.getPost();
+    }
+    
+    public String getTag() {
+    	return clientInterface.getTag();
+    }
 
 
     @Override
@@ -169,11 +162,10 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
         String myservername = Utils.paramorize(build, listener, servername);
         String mytarget = Utils.paramorize(build, listener, getTarget());
         String myfunction = Utils.paramorize(build, listener, getFunction());
-        String myarguments = Utils.paramorize(build, listener, arguments);
-        String mykwarguments = Utils.paramorize(build, listener, kwarguments);
+        String myarguments = Utils.paramorize(build, listener, getArguments());
+        
         boolean myBlockBuild = getBlockbuild();
         boolean jobSuccess = true;
-        Integer minionTimeout = getDescriptor().getTimeoutTime();
 
         StandardUsernamePasswordCredentials credential = getCredentialById(getCredentialsId());
         if (credential == null) {
@@ -183,125 +175,37 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
 
         // Setup connection for auth
         String token = new String();
-        JSONArray authArray = createAuthArray(credential);
+        JSONObject auth = createAuthArray(credential);
         JSONObject httpResponse = new JSONObject();
         JSONArray returnArray = new JSONArray();
 
         // Get an auth token
-        token = Utils.getToken(myservername, authArray);
+        token = Utils.getToken(myservername, auth);
         if (token.contains("Error")) {
             listener.error(token);
             return false;
         }
         
         // If we got this far, auth must have been good and we've got a token
-        JSONObject saltFunc = prepareSaltFunction(build, listener, myClientInterface, mytarget, myfunction, myarguments,
-                mykwarguments);
+        JSONObject saltFunc = prepareSaltFunction(build, listener, myClientInterface, mytarget, myfunction, myarguments);
 
-        JSONArray saltArray = new JSONArray();
-        saltArray.add(saltFunc);
+        LOGGER.log(Level.FINE, "Sending JSON: " + saltFunc.toString());
 
-        LOGGER.log(Level.FINE, "Sending JSON: " + saltArray.toString());
-
-        // blocking request
+        // Access different salt-api endpoints depending on function
         if (myBlockBuild) {
-            String jid = new String();
-            // Send request to /minion url. This will give back a jid which we
-            // will need to poll and lookup for completion
-            httpResponse = Utils.getJSON(myservername + "/minions", saltArray, token);
-            try {
-                returnArray = httpResponse.getJSONArray("return");
-                for (Object o : returnArray) {
-                    JSONObject line = (JSONObject) o;
-                    jid = line.getString("jid");
-                }
-                // Print out success
-                listener.getLogger().println("Running jid: " + jid);
-            } catch (Exception e) {
-                listener.error(httpResponse.toString(2));
-                return false;
-            }
-
-            // Request successfully sent. Now use jid to check if job complete
-            int numMinions = 0;
-            int numMinionsDone = 0;
-        	JSONArray minionsArray = new JSONArray();
-            httpResponse = Utils.getJSON(myservername + "/jobs/" + jid, null, token);
-            try {
-                // info array will tell us how many minions were targeted
-                returnArray = httpResponse.getJSONArray("info");
-                for (Object o : returnArray) {
-                    JSONObject line = (JSONObject) o;
-                    minionsArray = line.getJSONArray("Minions");
-                    // Check the info[Minions[]] array to see how many nodes we
-                    // expect to hear back from
-                    numMinions = minionsArray.size();
-                    listener.getLogger().println("Waiting for " + numMinions + " minions");
-                }
-                returnArray = httpResponse.getJSONArray("return");
-                // Check the return[] array to see how many minions have
-                // responded
-                if (!returnArray.getJSONObject(0).names().isEmpty()) {
-                    numMinionsDone = returnArray.getJSONObject(0).names().size();
-                } else {
-                    numMinionsDone = 0;
-                }
-                listener.getLogger().println(numMinionsDone + " minions are done");
-            } catch (Exception e) {
-                listener.error(httpResponse.toString(2));
-                return false;
-            }
-
-            // Now that we know how many minions have responded, and how many we
-            // are waiting on. Let's see more have finished
-            if (numMinionsDone < numMinions) {
-                // Don't print annoying messages unless we really are waiting for
-                // more minions to return
-                listener.getLogger().println(
-                        "Will check status every " + getJobPollTime() + " seconds...");
-            }
-            while (numMinionsDone < numMinions) {
-                try {
-                    Thread.sleep(getJobPollTime() * 1000);
-                } catch (InterruptedException ex) {
-                    Thread.currentThread().interrupt();
-                    // Allow user to cancel job in jenkins interface
-                    throw new InterruptedException();
-                }
-                Integer oldMinionsDone = numMinionsDone;
-                httpResponse = Utils.getJSON(servername + "/jobs/" + jid, null, token);
-                returnArray = httpResponse.getJSONArray("return");
-                numMinionsDone = returnArray.getJSONObject(0).names().size();
-                if (numMinionsDone > oldMinionsDone && numMinionsDone < numMinions) {
-                	// Some minions returned, but not all
-                	// Give them minionTimeout to all return or fail build
-                	try {
-                		listener.getLogger().println(
-                                "Some minions returned. Waiting " + minionTimeout + " seconds");
-                		Thread.sleep(minionTimeout * 1000);
-                	} catch (InterruptedException ex) {
-                		Thread.currentThread().interrupt();
-                        // Allow user to cancel job in jenkins interface
-                		throw new InterruptedException();
-                	}
-                    httpResponse = Utils.getJSON(servername + "/jobs/" + jid, null, token);
-                    returnArray = httpResponse.getJSONArray("return");
-                    numMinionsDone = returnArray.getJSONObject(0).names().size();
-                    if (numMinionsDone < numMinions) {
-                    	JSONArray respondedMinions = returnArray.getJSONObject(0).names();
-                    	for (int i = 0; i < respondedMinions.size(); ++i) {
-                    		minionsArray.discard(respondedMinions.get(i));
-                    	}
-                    	listener.error(
-                                "Minions timed out:\n" + minionsArray.toString() + "\n\n");
-                    	jobSuccess = false;
-                    	break;
-                    }
-                }
-            }
+            // poll /minion for response
+        	jobSuccess = runBlockingBuild(returnArray, myservername, token, saltFunc, listener);
+        } else if (myClientInterface.equals("hook")) {
+        	// publish event to salt event bus to /hook
+        	String myTag = Utils.paramorize(build, listener, getTag());
+        	// Cleanup myTag to remove duplicate / and urlencode
+        	myTag = myTag.replaceAll("^/", "");
+        	myTag = URLEncoder.encode(myTag, "UTF-8");
+        	httpResponse = Utils.getJSON(myservername + "/hook/" + myTag, saltFunc, token);
+        	returnArray.add(httpResponse);
         } else {
-            // Just send a salt request. Don't wait for reply
-            httpResponse = Utils.getJSON(myservername, saltArray, token);
+            // Just send a salt request to /. Don't wait for reply
+            httpResponse = Utils.getJSON(myservername, saltFunc, token);
             returnArray = httpResponse.getJSONArray("return");
         }
         // Finished processing
@@ -328,8 +232,10 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
         }
         
         // Print results
-        listener.getLogger().println("Response on " + myfunction + " " + myarguments + " for "
+        if ( myClientInterface != "hook"){
+        	listener.getLogger().println("Response on " + myfunction + " " + myarguments + " for "
                 + mytarget + ":");
+        }
         if (myOutputFormat.equals("json")) {
             listener.getLogger().println(returnArray.toString(2));
         } else if (myOutputFormat.equals("yaml")) {
@@ -345,20 +251,18 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
         return jobSuccess;
     }
 
-    private JSONArray createAuthArray(StandardUsernamePasswordCredentials credential) {
-        JSONArray authArray = new JSONArray();
+    private JSONObject createAuthArray(StandardUsernamePasswordCredentials credential) {
         JSONObject auth = new JSONObject();
         auth.put("username", credential.getUsername());
         auth.put("password", credential.getPassword().getPlainText());
         auth.put("eauth", authtype);
-        authArray.add(auth);
 
-        return authArray;
+        return auth;
     }
 
     private JSONObject prepareSaltFunction(Run build, TaskListener listener, String myClientInterface,
-                                           String mytarget, String myfunction, String myarguments, 
-                                           String mykwarguments) throws IOException, InterruptedException {
+                                           String mytarget, String myfunction, String myarguments 
+                                           ) throws IOException, InterruptedException {
         JSONObject saltFunc = new JSONObject();
         saltFunc.put("client", myClientInterface);
 
@@ -381,28 +285,37 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
         	saltFunc.put("sub", Integer.parseInt(mySubset));
             listener.getLogger().println("Running in subset mode. Subset size: " + mySubset);
             break;
+        case "hook":
+        	// Posting to /hook url should only contain object to be posted
+        	String myPost = Utils.paramorize(build, listener, getPost());
+        	saltFunc = JSONObject.fromObject(myPost);
+        	return saltFunc;
         }
 
         saltFunc.put("tgt", mytarget);
         saltFunc.put("expr_form", getTargettype());
         saltFunc.put("fun", myfunction);
         addArgumentsToSaltFunction(myarguments, saltFunc);
-        addKwArgumentsToSaltFunction(mykwarguments, saltFunc);
 
         return saltFunc;
     }
 
-    private void addKwArgumentsToSaltFunction(String mykwarguments, JSONObject saltFunc) {
-        if (mykwarguments.length() > 0) {
-            Map<String, String> kwArgs = new HashMap<String, String>();
-            // spit on comma seperated not inside of single and double quotes
-            String[] kwargItems = mykwarguments.split(",(?=(?:[^'\"]|'[^']*'|\"[^\"]*\")*$)");
-            for (String kwarg : kwargItems) {
-                // remove spaces at begining or end
-                kwarg = kwarg.replaceAll("^\\s+|\\s+$", "");
-                kwarg = kwarg.replaceAll("\"|\\\"", "");
-                if (kwarg.contains("=")) {
-                    String[] kwString = kwarg.split("=");
+
+    private void addArgumentsToSaltFunction(String myarguments, JSONObject saltFunc) {
+        if (myarguments.length() > 0) {
+            JSONObject fullKwJSON = new JSONObject();
+
+            // spit on space separated not inside of single and double quotes
+            String[] argItems = myarguments.split("\\s+(?=(?:[^'\"]|'[^']*'|\"[^\"]*\")*$)");
+
+            for (String arg : argItems) {
+                // remove spaces at beginning or end
+                arg = arg.replaceAll("^\\s+|\\s+$", "");
+                // if string wrapped in quotes, remove them since adding to list
+                // re-quotes
+                arg = arg.replaceAll("(^')|(^\")|('$)|(\"$)", "");
+                if (arg.contains("=")) {
+                    String[] kwString = arg.split("=");
                     if (kwString.length > 2) {
                         // kwarg contained more than one =. Let's put the string
                         // back together
@@ -414,41 +327,136 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
                             }
                             // add the second item
                             if (kwItem == kwString[1]) {
+                            	// again remove any wrapping quotes
+                                kwItem = kwItem.replaceAll("(^')|(^\")|('$)|(\"$)", "");
                                 kwFull += kwItem;
                                 continue;
                             }
                             // add all other items with an = to rejoin
                             kwFull += "=" + kwItem;
                         }
-                        kwArgs.put(kwString[0], kwFull);
+                        fullKwJSON.put(kwString[0], kwFull);
                     } else {
-                        kwArgs.put(kwString[0], kwString[1]);
+                    	// again remove any wrapping quotes
+                        kwString[1] = kwString[1].replaceAll("(^')|(^\")|('$)|(\"$)", "");
+        	        	try {
+        	                // If value was already a jsonobject, treat it as such
+        	                JSON kwJSON = JSONSerializer.toJSON(kwString[1]);
+        	                // Rejoin key and json object
+        	                fullKwJSON.element(kwString[0], kwJSON);
+        	            } catch (JSONException e) {
+        	                // Otherwise it must have been a string
+                            fullKwJSON.put(kwString[0], kwString[1]);
+        	            }
                     }
+                } else {
+                	// Add any args to json message
+                	saltFunc.accumulate("arg", arg);
                 }
             }
-            // Add any kwargs to json message
-            saltFunc.element("kwarg", kwArgs);
+            // Now that loops have completed, add kwarg object
+            saltFunc.element("kwarg", fullKwJSON);
         }
     }
+    
+    private boolean runBlockingBuild(JSONArray returnArray, String myservername, 
+    		String token, JSONObject saltFunc, TaskListener listener) throws InterruptedException {
+    	JSONObject httpResponse = new JSONObject();
+    	String jid = new String();
+    	// Send request to /minion url. This will give back a jid which we
+    	// will need to poll and lookup for completion
+    	httpResponse = Utils.getJSON(myservername + "/minions", saltFunc, token);
+    	try {
+    		returnArray = httpResponse.getJSONArray("return");
+    		for (Object o : returnArray) {
+    			JSONObject line = (JSONObject) o;
+    			jid = line.getString("jid");
+    		}
+    		// Print out success
+    		listener.getLogger().println("Running jid: " + jid);
+    	} catch (Exception e) {
+    		listener.error(httpResponse.toString(2));
+    		return false;
+    	}
 
-    private void addArgumentsToSaltFunction(String myarguments, JSONObject saltFunc) {
-        if (myarguments.length() > 0) {
-            List<String> saltArguments = new ArrayList<String>();
-            // spit on comma seperated not inside of single and double quotes
-            String[] argItems = myarguments.split(",(?=(?:[^'\"]|'[^']*'|\"[^\"]*\")*$)");
+    	// Request successfully sent. Now use jid to check if job complete
+    	int numMinions = 0;
+    	int numMinionsDone = 0;
+    	JSONArray minionsArray = new JSONArray();
+    	httpResponse = Utils.getJSON(myservername + "/jobs/" + jid, null, token);
+    	try {
+    		// info array will tell us how many minions were targeted
+    		returnArray = httpResponse.getJSONArray("info");
+    		for (Object o : returnArray) {
+    			JSONObject line = (JSONObject) o;
+    			minionsArray = line.getJSONArray("Minions");
+    			// Check the info[Minions[]] array to see how many nodes we
+    			// expect to hear back from
+    			numMinions = minionsArray.size();
+    			listener.getLogger().println("Waiting for " + numMinions + " minions");
+    		}
+    		returnArray = httpResponse.getJSONArray("return");
+    		// Check the return[] array to see how many minions have
+    		// responded
+    		if (!returnArray.getJSONObject(0).names().isEmpty()) {
+    			numMinionsDone = returnArray.getJSONObject(0).names().size();
+    		} else {
+    			numMinionsDone = 0;
+    		}
+    		listener.getLogger().println(numMinionsDone + " minions are done");
+    	} catch (Exception e) {
+    		listener.error(httpResponse.toString(2));
+    		return false;
+    	}
 
-            for (String arg : argItems) {
-                // remove spaces at begining or end
-                arg = arg.replaceAll("^\\s+|\\s+$", "");
-                // if string wrapped in quotes, remove them since adding to list
-                // re-quotes
-                arg = arg.replaceAll("(^')|(^\")|('$)|(\"$)", "");
-                saltArguments.add(arg);
-            }
-
-            // Add any args to json message
-            saltFunc.element("arg", saltArguments);
-        }
+    	// Now that we know how many minions have responded, and how many we
+    	// are waiting on. Let's see more have finished
+    	if (numMinionsDone < numMinions) {
+    		// Don't print annoying messages unless we really are waiting for
+    		// more minions to return
+    		listener.getLogger().println(
+    				"Will check status every " + getJobPollTime() + " seconds...");
+    	}
+    	while (numMinionsDone < numMinions) {
+    		try {
+    			Thread.sleep(getJobPollTime() * 1000);
+    		} catch (InterruptedException ex) {
+    			Thread.currentThread().interrupt();
+    			// Allow user to cancel job in jenkins interface
+    			throw new InterruptedException();
+    		}
+    		Integer oldMinionsDone = numMinionsDone;
+    		httpResponse = Utils.getJSON(servername + "/jobs/" + jid, null, token);
+    		returnArray = httpResponse.getJSONArray("return");
+    		numMinionsDone = returnArray.getJSONObject(0).names().size();
+            Integer minionTimeout = getDescriptor().getTimeoutTime();
+    		if (numMinionsDone > oldMinionsDone && numMinionsDone < numMinions) {
+    			// Some minions returned, but not all
+    			// Give them minionTimeout to all return or fail build
+    			try {
+    				listener.getLogger().println(
+    						"Some minions returned. Waiting " + minionTimeout + " seconds");
+    				Thread.sleep(minionTimeout * 1000);
+    			} catch (InterruptedException ex) {
+    				Thread.currentThread().interrupt();
+    				// Allow user to cancel job in jenkins interface
+    				throw new InterruptedException();
+    			}
+    			httpResponse = Utils.getJSON(servername + "/jobs/" + jid, null, token);
+    			returnArray = httpResponse.getJSONArray("return");
+    			numMinionsDone = returnArray.getJSONObject(0).names().size();
+    			if (numMinionsDone < numMinions) {
+    				JSONArray respondedMinions = returnArray.getJSONObject(0).names();
+    				for (int i = 0; i < respondedMinions.size(); ++i) {
+    					minionsArray.discard(respondedMinions.get(i));
+    				}
+    				listener.error(
+    						"Minions timed out:\n" + minionsArray.toString() + "\n\n");
+    				return false;
+    			}
+    		}
+    	}
+    	return true;
     }
     
     StandardUsernamePasswordCredentials getCredentialById(String credentialId) {
@@ -533,13 +541,11 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
             }
 
             if (!servername.matches("\\{\\{\\w+\\}\\}")) {
-                JSONArray authArray = new JSONArray();
                 JSONObject auth = new JSONObject();
                 auth.put("username", usedCredential.getUsername());
                 auth.put("password", usedCredential.getPassword().getPlainText());
                 auth.put("eauth", authtype);
-                authArray.add(auth);
-                String token = Utils.getToken(servername, authArray);
+                String token = Utils.getToken(servername, auth);
                 if (token.contains("Error")) {
                     return FormValidation.error("Client error: " + token);
                 }
@@ -604,10 +610,6 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
             }
 
             return FormValidation.ok();
-        }
-
-        public FormValidation doCheckFunction(@QueryParameter String value) {
-            return Utils.validateFormStringField(value, "Please specify a salt function", "Isn't it too short?");
         }
 
         public FormValidation doCheckPollTime(@QueryParameter String value) {

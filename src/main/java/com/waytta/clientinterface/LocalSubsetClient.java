@@ -15,15 +15,26 @@ import com.waytta.Utils;
 
 
 public class LocalSubsetClient extends BasicClient {
-    private String subset = "1";
-    private String target;
-    private String targetType;
+	private String function;
+	private String arguments;
+	private String subset = "1";
+	private String target;
+	private String targetType;
 
     @DataBoundConstructor
-    public LocalSubsetClient(String subset, String target, String targetType) {
-        this.subset = subset;
+    public LocalSubsetClient(String function, String arguments, String subset, String target, String targetType) {
+    	this.function = function;
+    	this.arguments = arguments;
+    	this.subset = subset;
     	this.target = target;
-        this.targetType = targetType;
+    	this.targetType = targetType;
+    }
+    public String getFunction() {
+    	return function;
+    }
+    
+    public String getArguments() {
+    	return arguments;
     }
 
     public String getSubset() {
@@ -47,6 +58,10 @@ public class LocalSubsetClient extends BasicClient {
         @Override
         public String getDisplayName() {
         	return "local_subset";
+        }
+        
+        public FormValidation doCheckFunction(@QueryParameter String value) {
+            return Utils.validateFormStringField(value, "Please specify a salt function", "Isn't it too short?");
         }
     	
         public FormValidation doCheckTarget(@QueryParameter String value) {

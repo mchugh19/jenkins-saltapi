@@ -9,7 +9,6 @@
     <c:select />
   </f:entry>
 
-
   <f:entry title="Auth Type" field="authtype">
     <select name="authtype">
       <f:option value="pam" selected="${instance.authtype == 'pam'}">pam</f:option>
@@ -20,21 +19,8 @@
    title="${%Test Connection}" progress="${%Testing...}"
    method="testConnection" with="servername,credentialsId,authtype" />
 
-
   <f:dropdownDescriptorSelector title="Client Interface" field="clientInterface"
     descriptors="${descriptor.clientDescriptors}" />
-
-  <f:entry title="Function" field="function">
-    <f:textbox default="cmd.run" />
-  </f:entry>
-
-  <f:entry title="Arguments" field="arguments">
-    <f:textbox />
-  </f:entry>
-
-  <f:entry title="KWArguments" field="kwarguments">
-    <f:textbox />
-  </f:entry>
 
   <f:entry title="Save output to environment variable" field="saveEnvVar" description="Save Salt return into environment variable SALTBUILDOUTPUT">
     <f:checkbox />

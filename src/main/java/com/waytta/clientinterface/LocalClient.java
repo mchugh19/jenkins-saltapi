@@ -13,16 +13,27 @@ import jenkins.model.Jenkins;
 
 
 public class LocalClient extends BasicClient {
-    public static final int DEFAULT_JOB_POLL_TIME = 10;
-    private int jobPollTime = DEFAULT_JOB_POLL_TIME;
-    private boolean blockbuild = false;
-    private String target;
-    private String targetType;
+	public static final int DEFAULT_JOB_POLL_TIME = 10;
+	private int jobPollTime = DEFAULT_JOB_POLL_TIME;
+	private boolean blockbuild = false;
+	private String target;
+	private String targetType;
+	private String function;
+	private String arguments;
 
     @DataBoundConstructor
-    public LocalClient(String target, String targetType) {
-        this.target = target;
-        this.targetType = targetType;
+    public LocalClient(String function, String arguments, String target, String targetType) {
+    	this.function = function;
+    	this.arguments = arguments;
+    	this.target = target;
+    	this.targetType = targetType;
+    }
+    public String getFunction() {
+    	return function;
+    }
+    
+    public String getArguments() {
+    	return arguments;
     }
     
     public int getJobPollTime() {
@@ -60,6 +71,10 @@ public class LocalClient extends BasicClient {
         @Override
         public String getDisplayName() {
         	return "local";
+        }
+        
+        public FormValidation doCheckFunction(@QueryParameter String value) {
+            return Utils.validateFormStringField(value, "Please specify a salt function", "Isn't it too short?");
         }
     	
         public FormValidation doCheckTarget(@QueryParameter String value) {

@@ -105,7 +105,6 @@ public class SaltAPIBuilderTest {
         return new SaltAPIBuilder(
                 "servername",
                 "authtype",
-                "function",
                 clientInterfaces,
                 DEFAULT_CREDENTIAL_ID);
     }
@@ -150,7 +149,7 @@ public class SaltAPIBuilderTest {
 
         SaltAPIBuilder builder = setupBuilderForDefaultPerform();
         mockStatic(Utils.class);
-        when(Utils.getToken(anyString(), any(JSONArray.class))).thenReturn("okie_dokie");
+        when(Utils.getToken(anyString(), any(JSONObject.class))).thenReturn("okie_dokie");
 
         BuildListener buildListener = mock(BuildListener.class);
         PrintStream printer = mock(PrintStream.class);
@@ -159,11 +158,10 @@ public class SaltAPIBuilderTest {
         AbstractBuild jenkinsBuild = mock(AbstractBuild.class);
         Launcher launcher = mock(Launcher.class);
         //when(Utils.paramorize(jenkinsBuild, buildListener, builder.getTarget())).thenReturn("junit_mytarget");
-        when(Utils.paramorize(jenkinsBuild, buildListener, builder.getFunction())).thenReturn("junit_myfunction");
-        when(Utils.paramorize(jenkinsBuild, buildListener, builder.getArguments())).thenReturn("junit_myarguments");
-        when(Utils.paramorize(jenkinsBuild, buildListener, builder.getKwarguments())).thenReturn("junit_mykwarguments");
+        //when(Utils.paramorize(jenkinsBuild, buildListener, builder.getFunction())).thenReturn("junit_myfunction");
+        //when(Utils.paramorize(jenkinsBuild, buildListener, builder.getArguments())).thenReturn("junit_myarguments");
         JSONObject httpResponse = mock(JSONObject.class);
-        when(Utils.getJSON(anyString(), any(JSONArray.class),anyString())).thenReturn(httpResponse);
+        when(Utils.getJSON(anyString(), any(JSONObject.class),anyString())).thenReturn(httpResponse);
         when(httpResponse.toString(2)).thenReturn("junit_httpResponse");
         JSONArray returnArray = new JSONArray();
         returnArray.add(0,"junit");
@@ -193,8 +191,6 @@ public class SaltAPIBuilderTest {
                 StandardUsernamePasswordCredentials.class, jenkins, ACL.SYSTEM, new ArrayList<DomainRequirement>())).thenReturn(credentials);;
 
         SaltAPIBuilder builder = build();
-        builder.setArguments("junit arguments");
-        builder.setKwarguments("junit kwarguments");
         
         return builder;
     }
