@@ -135,8 +135,16 @@ public class Utils {
     public static boolean validateFunctionCall(JSONArray returnArray) {
         boolean result = true;
         
+        // Salt's /hook url returns non standard response. Assume this response is valid
+        JSONArray successHook = JSONArray.fromObject("[{\"Success\": True}]");
+        if (returnArray.equals(successHook)) {
+        	return true;
+        }
+        
         if (returnArray.get(0).toString().contains("TypeError")) {
-            result = false;
+            return false;
+        } else if (returnArray.getJSONObject(0).has("Error")) {
+            return false;
         }
 
         for (Object o : returnArray) {
