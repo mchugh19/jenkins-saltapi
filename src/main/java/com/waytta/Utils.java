@@ -141,11 +141,21 @@ public class Utils {
         	return true;
         }
         
-        if (returnArray.get(0).toString().contains("TypeError")) {
-            return false;
-        } else if (returnArray.getJSONObject(0).has("Error")) {
-            return false;
-        }
+        try {
+        	if (returnArray.get(0).toString().contains("TypeError")) {
+        		return false;
+        	} else if (returnArray.getJSONObject(0).has("Error")) {
+        		// detect [{"Error": ...
+        		return false;
+        	}
+        } catch (Exception e) {}
+        
+        try {
+        	if (returnArray.getJSONArray(0).isArray()) {
+        		// detect runner manage.present result [["minion1", "minion2"...
+        		return true;
+        	}
+        } catch (Exception e) {}
 
         for (Object o : returnArray) {
             if (o instanceof Boolean) {

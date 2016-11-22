@@ -232,10 +232,11 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
         }
         
         // Print results
-        if ( myClientInterface != "hook"){
-        	listener.getLogger().println("Response on " + myfunction + " " + myarguments + " for "
-                + mytarget + ":");
-        }
+        if (myfunction.length() > 0) {listener.getLogger().print("Response on " + myfunction);}
+        if (myarguments.length() > 0) {listener.getLogger().print(" " + myarguments);}
+        if (mytarget.length() > 0) {listener.getLogger().print(" for " + mytarget + ":");}
+        listener.getLogger().println("");
+
         if (myOutputFormat.equals("json")) {
             listener.getLogger().println(returnArray.toString(2));
         } else if (myOutputFormat.equals("yaml")) {
@@ -275,10 +276,12 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
         case "runner":
         	saltFunc.put("mods", getMods());
             String myPillarvalue = Utils.paramorize(build, listener, getPillarvalue());
-            JSONObject jPillar = new JSONObject();
-            // If value was already a jsonobject, treat it as such
-            JSON runPillarValue = JSONSerializer.toJSON(myPillarvalue);
-            saltFunc.put("pillar", runPillarValue);
+            if ( myPillarvalue.length() > 0) {
+            	JSONObject jPillar = new JSONObject();
+            	// If value was already a jsonobject, treat it as such
+            	JSON runPillarValue = JSONSerializer.toJSON(myPillarvalue);
+            	saltFunc.put("pillar", runPillarValue);
+            }
             break;
         case "local_subset":
         	String mySubset = Utils.paramorize(build, listener, getSubset());
