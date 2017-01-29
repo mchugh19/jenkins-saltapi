@@ -30,11 +30,11 @@ import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.AbstractProject;
-import hudson.model.Run;
-import hudson.model.TaskListener;
-import hudson.security.ACL;
+import hudson.model.AbstractBuild;
+import hudson.model.BuildListener;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
+import hudson.security.ACL;
 import hudson.util.FormValidation;
 
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -52,7 +52,7 @@ import net.sf.json.JSONSerializer;
 import net.sf.json.JSONObject;
 import net.sf.json.util.JSONUtils;
 
-public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
+public class SaltAPIBuilder extends Builder {
     private static final Logger LOGGER = Logger.getLogger("com.waytta.saltstack");
 
     private String servername;
@@ -148,15 +148,7 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
 
 
     @Override
-    public void perform(Run<?, ?> run, FilePath workspace, Launcher launcher, TaskListener listener) throws InterruptedException, IOException {
-        boolean success = perform(run, launcher, listener);
-        if (!success) {
-            throw new hudson.AbortException();
-        }
-    }
-
-    //    @Override
-    public boolean perform(Run build, Launcher launcher, TaskListener listener) throws InterruptedException, IOException {
+    public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
         String myOutputFormat = getDescriptor().getOutputFormat();
         String myClientInterface = clientInterface.getDescriptor().getDisplayName();
         String myservername = Utils.paramorize(build, listener, servername);
@@ -173,45 +165,22 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
             return false;
         }
 
-        // Setup connection for auth
-        String token = new String();
-        JSONObject auth = Utils.createAuthArray(credential, authtype);
-        JSONObject httpResponse = new JSONObject();
-        JSONArray returnArray = new JSONArray();
+		 // Setup connection for auth
+	    JSONObject auth = Utils.createAuthArray(credential, authtype);
 
-        // Get an auth token
-        token = Utils.getToken(myservername, auth);
-        if (token.contains("Error")) {
-            listener.error(token);
-            return false;
-        }
+	    // Get an auth token
+	    String token = new String();
+	    token = Utils.getToken(myservername, auth);
+	    if (token.contains("Error")) {
+	        listener.error(token);
+	        return false;
+	    }
+	    
+	    // If we got this far, auth must have been good and we've got a token
+	    JSONObject saltFunc = prepareSaltFunction(build, listener, myClientInterface, mytarget, myfunction, myarguments);
+	    LOGGER.log(Level.FINE, "Sending JSON: " + saltFunc.toString());
         
-        // If we got this far, auth must have been good and we've got a token
-        JSONObject saltFunc = prepareSaltFunction(build, listener, myClientInterface, mytarget, myfunction, myarguments);
-
-        LOGGER.log(Level.FINE, "Sending JSON: " + saltFunc.toString());
-
-        // Access different salt-api endpoints depending on function
-        if (myBlockBuild) {
-        	int jobPollTime = getJobPollTime();
-            int minionTimeout = getDescriptor().getTimeoutTime();
-            // poll /minion for response
-        	jobSuccess = Builds.runBlockingBuild(returnArray, myservername, token, saltFunc, listener, jobPollTime, minionTimeout);
-        } else if (myClientInterface.equals("hook")) {
-        	// publish event to salt event bus to /hook
-        	String myTag = Utils.paramorize(build, listener, getTag());
-        	// Cleanup myTag to remove duplicate / and urlencode
-        	myTag = myTag.replaceAll("^/", "");
-        	myTag = URLEncoder.encode(myTag, "UTF-8");
-        	httpResponse = Utils.getJSON(myservername + "/hook/" + myTag, saltFunc, token);
-        	returnArray.add(httpResponse);
-        } else {
-            // Just send a salt request to /. Don't wait for reply
-            httpResponse = Utils.getJSON(myservername, saltFunc, token);
-            returnArray = httpResponse.getJSONArray("return");
-        }
-        // Finished processing
-
+        JSONArray returnArray = performRequest(build, token, myservername, saltFunc, listener, myBlockBuild);
         LOGGER.log(Level.FINE, "Received response: " + returnArray);
 
         // Save saltapi output to env if requested
@@ -254,7 +223,34 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
         return jobSuccess;
     }
     
-    private JSONObject prepareSaltFunction(Run build, TaskListener listener, String myClientInterface, String mytarget,
+	public JSONArray performRequest(AbstractBuild build, String token, String serverName, JSONObject saltFunc, BuildListener listener, boolean blockBuild) throws InterruptedException, IOException {
+	    JSONArray returnArray = new JSONArray();
+
+	    JSONObject httpResponse = new JSONObject();
+	    // Access different salt-api endpoints depending on function
+	    if (blockBuild) {
+	    	int jobPollTime = getJobPollTime();
+	        int minionTimeout = getDescriptor().getTimeoutTime();
+	        // poll /minion for response
+	    	returnArray = Builds.runBlockingBuild(build, returnArray, serverName, token, saltFunc, listener, jobPollTime, minionTimeout);
+	    } else if (saltFunc.getString("client").equals("hook")) {
+	    	// publish event to salt event bus to /hook
+	    	String myTag = Utils.paramorize(build, listener, getTag());
+	    	// Cleanup myTag to remove duplicate / and urlencode
+	    	myTag = myTag.replaceAll("^/", "");
+	    	myTag = URLEncoder.encode(myTag, "UTF-8");
+	    	httpResponse = Utils.getJSON(serverName + "/hook/" + myTag, saltFunc, token);
+	    	returnArray.add(httpResponse);
+	    } else {
+	        // Just send a salt request to /. Don't wait for reply
+	        httpResponse = Utils.getJSON(serverName, saltFunc, token);
+	        returnArray = httpResponse.getJSONArray("return");
+	    }
+	    
+	    return returnArray;
+    }
+    
+    private JSONObject prepareSaltFunction(AbstractBuild build, BuildListener listener, String myClientInterface, String mytarget,
 			String myfunction, String myarguments) throws IOException, InterruptedException {
 		JSONObject saltFunc = new JSONObject();
 		saltFunc.put("client", myClientInterface);
@@ -269,7 +265,6 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
 			saltFunc.put("mods", getMods());
 			String myPillarvalue = Utils.paramorize(build, listener, getPillarvalue());
 			if (myPillarvalue.length() > 0) {
-				JSONObject jPillar = new JSONObject();
 				// If value was already a jsonobject, treat it as such
 				JSON runPillarValue = JSONSerializer.toJSON(myPillarvalue);
 				saltFunc.put("pillar", runPillarValue);

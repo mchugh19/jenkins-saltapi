@@ -1,7 +1,8 @@
 package com.waytta;
 
-import hudson.model.Run;
-import hudson.model.TaskListener;
+import hudson.model.AbstractBuild;
+import hudson.model.Result;
+import hudson.model.BuildListener;
 
 import net.sf.json.JSON;
 import net.sf.json.JSONArray;
@@ -69,8 +70,8 @@ public class Builds {
     }
     
 
-    public static boolean runBlockingBuild(JSONArray returnArray, String myservername, 
-    		String token, JSONObject saltFunc, TaskListener listener, int pollTime, int minionTimeout) throws InterruptedException {
+    public static JSONArray runBlockingBuild(AbstractBuild build, JSONArray returnArray, String myservername, 
+    		String token, JSONObject saltFunc, BuildListener listener, int pollTime, int minionTimeout) throws InterruptedException {
     	JSONObject httpResponse = new JSONObject();
     	String jid = new String();
     	// Send request to /minion url. This will give back a jid which we
@@ -86,7 +87,7 @@ public class Builds {
     		listener.getLogger().println("Running jid: " + jid);
     	} catch (Exception e) {
     		listener.error(httpResponse.toString(2));
-    		return false;
+    		build.setResult(Result.FAILURE);
     	}
 
     	// Request successfully sent. Now use jid to check if job complete
@@ -116,7 +117,7 @@ public class Builds {
     		listener.getLogger().println(numMinionsDone + " minions are done");
     	} catch (Exception e) {
     		listener.error(httpResponse.toString(2));
-    		return false;
+    		build.setResult(Result.FAILURE);
     	}
 
     	// Now that we know how many minions have responded, and how many we
@@ -161,10 +162,10 @@ public class Builds {
     				}
     				listener.error(
     						"Minions timed out:\n" + minionsArray.toString() + "\n\n");
-    				return false;
+    	    		build.setResult(Result.FAILURE);
     			}
     		}
     	}
-    	return true;
+    	return returnArray;
     }
 }
