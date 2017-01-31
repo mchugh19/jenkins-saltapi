@@ -153,6 +153,11 @@ public class Utils {
         try {
         	if (returnArray.get(0).toString().contains("TypeError")) {
         		return false;
+        	} else if (returnArray.get(0).toString().contains("ERROR")) {
+        		return false;
+        	} else if (returnArray.get(0).toString().contains(" is not available.")) {
+        		// detect [{"minionname":"'functionname' is not available."}]
+        		return false;
         	} else if (returnArray.getJSONObject(0).has("Error")) {
         		// detect [{"Error": ...
         		return false;

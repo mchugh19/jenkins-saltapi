@@ -10,8 +10,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.annotation.Nonnull;
 
-import org.jenkinsci.Symbol;
+
 import com.waytta.clientinterface.BasicClient;
 import com.waytta.clientinterface.LocalBatchClient;
 import com.waytta.clientinterface.LocalClient;
@@ -30,8 +31,8 @@ import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.AbstractProject;
-import hudson.model.AbstractBuild;
-import hudson.model.BuildListener;
+import hudson.model.Run;
+import hudson.model.TaskListener;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.security.ACL;
@@ -55,18 +56,18 @@ import net.sf.json.util.JSONUtils;
 public class SaltAPIBuilder extends Builder {
     private static final Logger LOGGER = Logger.getLogger("com.waytta.saltstack");
 
-    private String servername;
-    private String authtype;
+    private @Nonnull String servername;
+    private @Nonnull String authtype;
     private String function;
     private String arguments;
     private String kwarguments;
     private BasicClient clientInterface;
     private boolean saveEnvVar = false;
-    private final String credentialsId;
+    private final @Nonnull String credentialsId;
 
 
     @DataBoundConstructor
-    public SaltAPIBuilder(String servername, String authtype, BasicClient clientInterface, String credentialsId) {
+    public SaltAPIBuilder(@Nonnull String servername, String authtype, BasicClient clientInterface, @Nonnull String credentialsId) {
         this.servername = servername;
         this.authtype = authtype;
         this.clientInterface = clientInterface;
@@ -75,6 +76,11 @@ public class SaltAPIBuilder extends Builder {
   
     public String getServername() {
         return servername;
+    }
+    
+    @DataBoundSetter
+    public void setServername(String servername) {
+        this.servername = servername;
     }
 
     public String getAuthtype() {
@@ -147,8 +153,7 @@ public class SaltAPIBuilder extends Builder {
     }
 
 
-    @Override
-    public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
+    public boolean perform(Run build, Launcher launcher, TaskListener listener) throws InterruptedException, IOException {
         String myOutputFormat = getDescriptor().getOutputFormat();
         String myClientInterface = clientInterface.getDescriptor().getDisplayName();
         String myservername = Utils.paramorize(build, listener, servername);
@@ -223,7 +228,7 @@ public class SaltAPIBuilder extends Builder {
         return jobSuccess;
     }
     
-	public JSONArray performRequest(AbstractBuild build, String token, String serverName, JSONObject saltFunc, BuildListener listener, boolean blockBuild) throws InterruptedException, IOException {
+	public JSONArray performRequest(Run build, String token, String serverName, JSONObject saltFunc, TaskListener listener, boolean blockBuild) throws InterruptedException, IOException {
 	    JSONArray returnArray = new JSONArray();
 
 	    JSONObject httpResponse = new JSONObject();
@@ -250,7 +255,7 @@ public class SaltAPIBuilder extends Builder {
 	    return returnArray;
     }
     
-    private JSONObject prepareSaltFunction(AbstractBuild build, BuildListener listener, String myClientInterface, String mytarget,
+    public JSONObject prepareSaltFunction(Run build, TaskListener listener, String myClientInterface, String mytarget,
 			String myfunction, String myarguments) throws IOException, InterruptedException {
 		JSONObject saltFunc = new JSONObject();
 		saltFunc.put("client", myClientInterface);
@@ -296,7 +301,7 @@ public class SaltAPIBuilder extends Builder {
         return (DescriptorImpl) super.getDescriptor();
     }
 
-    @Extension @Symbol("salt")
+    @Extension 
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
 
         int pollTime = 10;
@@ -335,7 +340,7 @@ public class SaltAPIBuilder extends Builder {
             return outputFormat;
         }
 
-        public FormValidation doTestConnection(
+        public static FormValidation doTestConnection(
                 @QueryParameter String servername,
                 @QueryParameter String credentialsId,
                 @QueryParameter String authtype) {
@@ -368,7 +373,7 @@ public class SaltAPIBuilder extends Builder {
             return FormValidation.warning("Cannot expand parametrized server name.");
         }
 
-        public StandardListBoxModel doFillCredentialsIdItems(
+        public static StandardListBoxModel doFillCredentialsIdItems(
                 @AncestorInPath Jenkins context,
                 @QueryParameter final String servername) {
             StandardListBoxModel result = new StandardListBoxModel();
@@ -378,7 +383,7 @@ public class SaltAPIBuilder extends Builder {
             return result;
         }
 
-        public FormValidation doCheckServername(@QueryParameter String value) {
+        public static FormValidation doCheckServername(@QueryParameter String value) {
             if (!value.matches("\\{\\{\\w+\\}\\}")) {
                 if (value.length() == 0) {
                     return FormValidation.error("Please specify a name");
@@ -400,7 +405,7 @@ public class SaltAPIBuilder extends Builder {
             return FormValidation.warning("Cannot expand parametrized server name.");
         }
 
-        public FormValidation doCheckCredentialsId(@AncestorInPath Item project, @QueryParameter String value) {
+        public static FormValidation doCheckCredentialsId(@AncestorInPath Item project, @QueryParameter String value) {
             if (project == null || !project.hasPermission(Item.CONFIGURE)) {
                 return FormValidation.ok();
             }

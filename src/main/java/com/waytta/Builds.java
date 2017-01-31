@@ -1,8 +1,8 @@
 package com.waytta;
 
-import hudson.model.AbstractBuild;
+import hudson.model.Run;
 import hudson.model.Result;
-import hudson.model.BuildListener;
+import hudson.model.TaskListener;
 
 import net.sf.json.JSON;
 import net.sf.json.JSONArray;
@@ -70,8 +70,8 @@ public class Builds {
     }
     
 
-    public static JSONArray runBlockingBuild(AbstractBuild build, JSONArray returnArray, String myservername, 
-    		String token, JSONObject saltFunc, BuildListener listener, int pollTime, int minionTimeout) throws InterruptedException {
+    public static JSONArray runBlockingBuild(Run build, JSONArray returnArray, String myservername, 
+    		String token, JSONObject saltFunc, TaskListener listener, int pollTime, int minionTimeout) throws InterruptedException {
     	JSONObject httpResponse = new JSONObject();
     	String jid = new String();
     	// Send request to /minion url. This will give back a jid which we
