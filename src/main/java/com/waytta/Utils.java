@@ -9,12 +9,21 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
+import com.cloudbees.plugins.credentials.domains.DomainRequirement;
+import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
 
 import hudson.EnvVars;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import hudson.security.ACL;
+import jenkins.model.Jenkins;
+
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import net.sf.json.JSONSerializer;
@@ -144,6 +153,11 @@ public class Utils {
         try {
         	if (returnArray.get(0).toString().contains("TypeError")) {
         		return false;
+        	} else if (returnArray.get(0).toString().contains("ERROR")) {
+        		return false;
+        	} else if (returnArray.get(0).toString().contains(" is not available.")) {
+        		// detect [{"minionname":"'functionname' is not available."}]
+        		return false;
         	} else if (returnArray.getJSONObject(0).has("Error")) {
         		// detect [{"Error": ...
         		return false;
@@ -263,5 +277,30 @@ public class Utils {
         }
 
         return FormValidation.ok();
+    }
+    
+    public static JSONObject createAuthArray(StandardUsernamePasswordCredentials credential, String authtype) {
+        JSONObject auth = new JSONObject();
+        auth.put("username", credential.getUsername());
+        auth.put("password", credential.getPassword().getPlainText());
+        auth.put("eauth", authtype);
+
+        return auth;
+    }
+    
+    static StandardUsernamePasswordCredentials getCredentialById(String credentialId) {
+        List<StandardUsernamePasswordCredentials> credentials = getCredentials(Jenkins.getInstance());
+        for (StandardUsernamePasswordCredentials credential : credentials) {
+            if (credential.getId().equals(credentialId)) {
+                return credential;
+            }
+        }
+        return null;
+    }
+
+    static List<StandardUsernamePasswordCredentials> getCredentials(Jenkins context) {
+        List<DomainRequirement> requirements = URIRequirementBuilder.create().build();
+        List<StandardUsernamePasswordCredentials> credentials = CredentialsProvider.lookupCredentials(StandardUsernamePasswordCredentials.class, context, ACL.SYSTEM, requirements);
+        return credentials;
     }
 }
