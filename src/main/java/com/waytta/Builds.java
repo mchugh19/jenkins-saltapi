@@ -136,11 +136,10 @@ public class Builds {
     			// Allow user to cancel job in jenkins interface
     			throw new InterruptedException();
     		}
-    		Integer oldMinionsDone = numMinionsDone;
     		httpResponse = Utils.getJSON(myservername + "/jobs/" + jid, null, token);
     		returnArray = httpResponse.getJSONArray("return");
     		numMinionsDone = returnArray.getJSONObject(0).names().size();
-    		if (numMinionsDone >= oldMinionsDone && numMinionsDone < numMinions) {
+    		if (numMinionsDone > 0 && numMinionsDone < numMinions) {
     			// Some minions returned, but not all
     			// Give them minionTimeout to all return or fail build
     			try {
