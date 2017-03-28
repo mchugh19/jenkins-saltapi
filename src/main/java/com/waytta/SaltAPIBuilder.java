@@ -39,6 +39,8 @@ import hudson.security.ACL;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 
+import jenkins.security.MasterToSlaveCallable;
+
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
@@ -185,7 +187,7 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
 
 	    // Get an auth token
 	    String token = "";
-	    token = Utils.getToken(myservername, auth);
+	    token = Utils.getToken(launcher, myservername, auth);
 	    if (token.contains("Error")) {
 	        listener.error(token);
 	        return false;
@@ -195,7 +197,7 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
 	    JSONObject saltFunc = prepareSaltFunction(build, listener, myClientInterface, mytarget, myfunction, myarguments);
 	    LOGGER.log(Level.FINE, "Sending JSON: " + saltFunc.toString());
         
-        JSONArray returnArray = performRequest(build, token, myservername, saltFunc, listener, myBlockBuild);
+        JSONArray returnArray = performRequest(launcher, build, token, myservername, saltFunc, listener, myBlockBuild);
         LOGGER.log(Level.FINE, "Received response: " + returnArray);
 
         // Save saltapi output to env if requested
@@ -238,28 +240,28 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
         return jobSuccess;
     }
     
-	public JSONArray performRequest(Run build, String token, String serverName, JSONObject saltFunc, TaskListener listener, boolean blockBuild) throws InterruptedException, IOException {
+	public JSONArray performRequest(Launcher launcher, Run build, String token, String serverName, JSONObject saltFunc, TaskListener listener, boolean blockBuild) throws InterruptedException, IOException {
 	    JSONArray returnArray = new JSONArray();
 	    JSONObject httpResponse = new JSONObject();
 	    // Access different salt-api endpoints depending on function
 	    if (blockBuild) {
-	    	int jobPollTime = getJobPollTime();
-	        int minionTimeout = getDescriptor().getTimeoutTime();
-	        // poll /minion for response
-	    	returnArray = Builds.runBlockingBuild(build, returnArray, serverName, token, saltFunc, listener, jobPollTime, minionTimeout);
+        int jobPollTime = getJobPollTime();
+        int minionTimeout = getDescriptor().getTimeoutTime();
+        // poll /minion for response
+        returnArray = Builds.runBlockingBuild(launcher, build, returnArray, serverName, token, saltFunc, listener, jobPollTime, minionTimeout);
 	    } else if (!saltFunc.has("client")) {
-	        // only hook communications should start with an empty function object
-	    	// publish event to salt event bus to /hook
-	    	String myTag = Utils.paramorize(build, listener, getTag());
-	    	// Cleanup myTag to remove duplicate / and urlencode
-	    	myTag = myTag.replaceAll("^/", "");
-	    	myTag = URLEncoder.encode(myTag, "UTF-8");
-	    	httpResponse = Utils.getJSON(serverName + "/hook/" + myTag, saltFunc, token);
-	    	returnArray.add(httpResponse);
+        // only hook communications should start with an empty function object
+        // publish event to salt event bus to /hook
+        String myTag = Utils.paramorize(build, listener, getTag());
+        // Cleanup myTag to remove duplicate / and urlencode
+        myTag = myTag.replaceAll("^/", "");
+        myTag = URLEncoder.encode(myTag, "UTF-8");
+        httpResponse = launcher.getChannel().call(new saltAPI(serverName + "/hook/" + myTag, saltFunc, token));
+        returnArray.add(httpResponse);
 	    } else {
-	        // Just send a salt request to /. Don't wait for reply
-	        httpResponse = Utils.getJSON(serverName, saltFunc, token);
-	        returnArray = httpResponse.getJSONArray("return");
+        // Just send a salt request to /. Don't wait for reply
+        httpResponse = launcher.getChannel().call(new saltAPI(serverName, saltFunc, token));
+        returnArray = httpResponse.getJSONArray("return");
 	    }
 	    
 	    return returnArray;
@@ -356,7 +358,7 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
                 @QueryParameter String servername,
                 @QueryParameter String credentialsId,
                 @QueryParameter String authtype,
-        		@AncestorInPath Item project) {            	
+        		@AncestorInPath Item project) {
         	StandardUsernamePasswordCredentials usedCredential = null;
         	for (StandardUsernamePasswordCredentials c : CredentialsProvider.lookupCredentials(
         			StandardUsernamePasswordCredentials.class,
@@ -372,12 +374,18 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
             if (usedCredential == null) {
                 return FormValidation.error("CredentialId error: no credential found with given ID.");
             }
+            
+            Launcher launcher = Jenkins.getInstance().createLauncher(TaskListener.NULL);
 
             if (!servername.matches("\\{\\{\\w+\\}\\}")) {
             	JSONObject auth = Utils.createAuthArray(usedCredential, authtype);
-                String token = Utils.getToken(servername, auth);
-                if (token.contains("Error")) {
-                    return FormValidation.error("Client error: " + token);
+            	try {
+            	    String token = Utils.getToken(launcher, servername, auth);
+            	    if (token.contains("Error")) {
+            	        return FormValidation.error("Client error: " + token);
+            	    }
+                } catch (InterruptedException|IOException e) {
+                    return FormValidation.error("Error: Exception running http request");
                 }
 
                 return FormValidation.ok("Success");
