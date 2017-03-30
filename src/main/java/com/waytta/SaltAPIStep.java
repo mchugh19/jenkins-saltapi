@@ -89,6 +89,10 @@ public class SaltAPIStep extends AbstractStepImpl {
     	return clientInterface.getJobPollTime();
     }
     
+    public int getMinionTimeout() {
+        return clientInterface.getMinionTimeout();
+    }
+
     public String getMods() {
     	return clientInterface.getMods();
     }
