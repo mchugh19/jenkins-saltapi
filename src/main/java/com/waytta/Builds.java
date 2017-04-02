@@ -5,6 +5,7 @@ import hudson.model.Result;
 import hudson.model.TaskListener;
 
 import java.io.IOException;
+import java.util.Iterator;
 
 import hudson.Launcher;
 
@@ -95,14 +96,44 @@ public class Builds {
         return isInteger;
     }
 
+    public static int returnedMinions(JSONArray saltReturn) {
+        int numMinionsDone = 0;
+        JSONObject resultObject = new JSONObject();
 
-    public static JSONArray runBlockingBuild(Launcher launcher, Run build, JSONArray returnArray, String myservername, 
-            String token, JSONObject saltFunc, TaskListener listener, int pollTime, int minionTimeout) throws IOException, InterruptedException {
+        resultObject = saltReturn.getJSONObject(0).getJSONObject("Result");
+        // Check Result for number of responses
+        Iterator<?> rMinionKeys = resultObject.keys();
+        while( rMinionKeys.hasNext() ) {
+            String key = (String)rMinionKeys.next();
+            if ( resultObject.get(key) instanceof JSONObject ) {
+                numMinionsDone += 1;
+            }
+        }
+        return numMinionsDone;
+    }
+
+    public static JSONArray returnData(JSONObject saltReturn, String netapi) {
+        JSONArray returnArray = new JSONArray();
+
+        // Tornado is keyed with return
+        if (netapi.contains("TornadoServer")) {
+            returnArray = saltReturn.getJSONArray("return");
+        } else {
+            // cherrypy is keyed with info
+            returnArray = saltReturn.getJSONArray("info");
+        }
+        return returnArray;
+    }
+
+
+    public static JSONArray runBlockingBuild(Launcher launcher, Run build, String myservername,
+            String token, JSONObject saltFunc, TaskListener listener, int pollTime, int minionTimeout, String netapi) throws IOException, InterruptedException {
+        JSONArray returnArray = new JSONArray();
         JSONObject httpResponse = new JSONObject();
         String jid = "";
         // Send request to /minion url. This will give back a jid which we
         // will need to poll and lookup for completion
-        httpResponse = launcher.getChannel().call(new saltAPI(myservername + "/minions", saltFunc, token));
+        httpResponse = launcher.getChannel().call(new httpCallable(myservername + "/minions", saltFunc, token));
         try {
             returnArray = httpResponse.getJSONArray("return");
             for (Object o : returnArray) {
@@ -120,31 +151,27 @@ public class Builds {
         int numMinions = 0;
         int numMinionsDone = 0;
         JSONArray minionsArray = new JSONArray();
-        httpResponse = launcher.getChannel().call(new saltAPI(myservername + "/jobs/" + jid, null, token));
+        JSONObject resultObject = new JSONObject();
+        JSONArray httpArray = new JSONArray();
+        httpResponse = launcher.getChannel().call(new httpCallable(myservername + "/jobs/" + jid, null, token));
         try {
-            // info array will tell us how many minions were targeted
-            returnArray = httpResponse.getJSONArray("info");
-            for (Object o : returnArray) {
+            httpArray = returnData(httpResponse, netapi);
+            for (Object o : httpArray) {
                 JSONObject line = (JSONObject) o;
                 minionsArray = line.getJSONArray("Minions");
-                // Check the info[Minions[]] array to see how many nodes we
-                // expect to hear back from
-                numMinions = minionsArray.size();
-                listener.getLogger().println("Waiting for " + numMinions + " minions");
+                resultObject = line.getJSONObject("Result");
             }
-            returnArray = httpResponse.getJSONArray("return");
-            // Check the return[] array to see how many minions have
-            // responded
-            if (!returnArray.getJSONObject(0).names().isEmpty()) {
-                numMinionsDone = returnArray.getJSONObject(0).names().size();
-            } else {
-                numMinionsDone = 0;
-            }
-            listener.getLogger().println(numMinionsDone + " minions are done");
         } catch (Exception e) {
             listener.error(httpResponse.toString(2));
             build.setResult(Result.FAILURE);
         }
+
+        // Check Minions array for number of targets minions
+        numMinions = minionsArray.size();
+        listener.getLogger().println("Waiting for " + numMinions + " minions");
+
+        numMinionsDone = returnedMinions(httpArray);
+        listener.getLogger().println(numMinionsDone + " minions are done");
 
         // Now that we know how many minions have responded, and how many we
         // are waiting on. Let's see more have finished
@@ -162,9 +189,9 @@ public class Builds {
                 // Allow user to cancel job in jenkins interface
                 throw new InterruptedException();
             }
-            httpResponse = launcher.getChannel().call(new saltAPI(myservername + "/jobs/" + jid, null, token));
-            returnArray = httpResponse.getJSONArray("return");
-            numMinionsDone = returnArray.getJSONObject(0).names().size();
+            httpResponse = launcher.getChannel().call(new httpCallable(myservername + "/jobs/" + jid, null, token));
+            httpArray = returnData(httpResponse, netapi);
+            numMinionsDone = returnedMinions(httpArray);
 
             // if minionTimeout is negative, still walkthrough the timeout process, but do not fail build
             boolean timeoutFail = true;
@@ -183,10 +210,12 @@ public class Builds {
                     int numberChecksRemain = minionTimeout % pollTime;
                     // Check every pollTime seconds until minionTimeout.
                     for (int i=0; i<numberChecks; i++) {
-                        httpResponse = launcher.getChannel().call(new saltAPI(myservername + "/jobs/" + jid, null, token));
-                        returnArray = httpResponse.getJSONArray("return");
-                        numMinionsDone = returnArray.getJSONObject(0).names().size();
+                        httpResponse = launcher.getChannel().call(new httpCallable(myservername + "/jobs/" + jid, null, token));
+                        httpArray = returnData(httpResponse, netapi);
+                        numMinionsDone = returnedMinions(httpArray);
                         if (numMinionsDone >= numMinions) {
+                            returnArray.clear();
+                            returnArray.add(httpArray);
                             return returnArray;
                         }
                         Thread.sleep(pollTime * 1000);
@@ -201,11 +230,16 @@ public class Builds {
                     // Allow user to cancel job in jenkins interface
                     throw new InterruptedException();
                 }
-                httpResponse = launcher.getChannel().call(new saltAPI(myservername + "/jobs/" + jid, null, token));
-                returnArray = httpResponse.getJSONArray("return");
-                numMinionsDone = returnArray.getJSONObject(0).names().size();
+                httpResponse = launcher.getChannel().call(new httpCallable(myservername + "/jobs/" + jid, null, token));
+                httpArray = returnData(httpResponse, netapi);
+                numMinionsDone = returnedMinions(httpArray);
                 if (numMinionsDone < numMinions) {
-                    JSONArray respondedMinions = returnArray.getJSONObject(0).names();
+                    JSONArray respondedMinions = new JSONArray();
+                    Iterator<?> rMinionKeys = httpArray.getJSONObject(0).getJSONObject("Result").keys();
+                    while( rMinionKeys.hasNext() ) {
+                        String key = (String)rMinionKeys.next();
+                        respondedMinions.add(key);
+                    }
                     for (int i = 0; i < respondedMinions.size(); ++i) {
                         minionsArray.discard(respondedMinions.get(i));
                     }
@@ -214,10 +248,14 @@ public class Builds {
                     if (timeoutFail) {
                         build.setResult(Result.FAILURE);
                     }
+                    returnArray.clear();
+                    returnArray.add(httpArray.getJSONObject(0).getJSONObject("Result"));
                     return returnArray;
                 }
             }
         }
+        returnArray.clear();
+        returnArray.add(httpArray.getJSONObject(0).getJSONObject("Result"));
         return returnArray;
     }
 }

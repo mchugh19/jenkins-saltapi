@@ -38,7 +38,7 @@ public class Utils {
 
     public static String getToken(Launcher launcher, String servername, JSONObject auth) throws InterruptedException, IOException {
         String token = "";
-        JSONObject httpResponse = launcher.getChannel().call(new saltAPI(servername + "/login", auth, null));
+        JSONObject httpResponse = launcher.getChannel().call(new httpCallable(servername + "/login", auth, null));
         try {
             JSONArray returnArray = httpResponse.getJSONArray("return");
             for (Object o : returnArray) {
@@ -115,12 +115,14 @@ public class Utils {
                 for (Object name : possibleMinion.names()) {
                     Object field = possibleMinion.get(name.toString());
 
+
                     // Match test failedJSON/commandNotAvailable.json
                     Pattern notFoundPattern = Pattern.compile(".*/bin/sh: 1: \\w+: not found.*");
                     Matcher matcher = notFoundPattern.matcher(field.toString());
                     if (matcher.matches()) {
                         return false;
                     }
+
 
                     // Match test failedJSON/duplicateStateName.json
                     Pattern renderingFailed = Pattern.compile(".*Rendering SLS '[\\w:.-]*' failed:.*");
@@ -135,7 +137,6 @@ public class Utils {
                     if (matcher.matches()) {
                         return false;
                     }
-
 
                     // Match test failedJSON/functionNotAvailable.json
                     if (field.toString().contains(" is not available.")) {
