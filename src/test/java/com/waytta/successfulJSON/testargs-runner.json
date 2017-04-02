@@ -1,8 +1,10 @@
-[{
-  "args": [],
-  "kwargs":   {
-    "mods": "",
-    "expr_form": "",
-    "tgt": ""
-  }
-}]
+[
+	{
+		"args": [],
+		"kwargs": {
+			"mods": "",
+			"expr_form": "",
+			"tgt": ""
+		}
+	}
+]
