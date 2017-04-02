@@ -115,14 +115,12 @@ public class Utils {
                 for (Object name : possibleMinion.names()) {
                     Object field = possibleMinion.get(name.toString());
 
-
                     // Match test failedJSON/commandNotAvailable.json
                     Pattern notFoundPattern = Pattern.compile(".*/bin/sh: 1: \\w+: not found.*");
                     Matcher matcher = notFoundPattern.matcher(field.toString());
                     if (matcher.matches()) {
                         return false;
                     }
-
 
                     // Match test failedJSON/duplicateStateName.json
                     Pattern renderingFailed = Pattern.compile(".*Rendering SLS '[\\w:.-]*' failed:.*");
