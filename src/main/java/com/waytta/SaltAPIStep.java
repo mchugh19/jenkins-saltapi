@@ -44,7 +44,7 @@ public class SaltAPIStep extends AbstractStepImpl {
     private BasicClient clientInterface;
     private boolean saveEnvVar = false;
     private final String credentialsId;
-    
+
     @DataBoundConstructor
     public SaltAPIStep(String servername, String authtype, BasicClient clientInterface, String credentialsId) {
         this.servername = servername;
@@ -52,7 +52,7 @@ public class SaltAPIStep extends AbstractStepImpl {
         this.clientInterface = clientInterface;
         this.credentialsId = credentialsId;
     }
-  
+
     public String getServername() {
         return servername;
     }
@@ -88,7 +88,7 @@ public class SaltAPIStep extends AbstractStepImpl {
     public int getJobPollTime() {
     	return clientInterface.getJobPollTime();
     }
-    
+
     public int getMinionTimeout() {
         return clientInterface.getMinionTimeout();
     }
@@ -96,11 +96,11 @@ public class SaltAPIStep extends AbstractStepImpl {
     public String getMods() {
     	return clientInterface.getMods();
     }
-    
+
     public String getPillarvalue() {
     	return clientInterface.getPillarvalue();
     }
-    
+
     public String getSubset() {
     	return clientInterface.getSubset();
     }
@@ -117,24 +117,24 @@ public class SaltAPIStep extends AbstractStepImpl {
     public boolean getSaveEnvVar() {
         return saveEnvVar;
     }
-    
+
     public BasicClient getClientInterface() {
     	return clientInterface;
     }
-    
+
     public String getPost() {
     	return clientInterface.getPost();
     }
-    
+
     public String getTag() {
     	return clientInterface.getTag();
     }
-    
+
     @Override
     public DescriptorImpl getDescriptor() {
         return (DescriptorImpl) super.getDescriptor();
     }
-    
+
     @Extension
     public static final class DescriptorImpl extends AbstractStepDescriptorImpl {
         public DescriptorImpl() {
@@ -145,27 +145,27 @@ public class SaltAPIStep extends AbstractStepImpl {
         public String getFunctionName() {
             return "salt";
         }
-        
+
         @Override
         public String getDisplayName() {
             return "Send a message to Salt API";
         }
-        
+
         public FormValidation doCheckServername(@QueryParameter String value) {
         	return SaltAPIBuilder.DescriptorImpl.doCheckServername(value);
         }
-        
+
         public ListBoxModel doFillCredentialsIdItems(
         		@AncestorInPath Job context,
         		@QueryParameter final String credentialsId,
                 @QueryParameter final String servername) {
             return SaltAPIBuilder.DescriptorImpl.doFillCredentialsIdItems(context, credentialsId, servername);
         }
-        
+
         public FormValidation doCheckCredentialsId(@AncestorInPath Item project, @QueryParameter String value) {
         	return SaltAPIBuilder.DescriptorImpl.doCheckCredentialsId(project, value);
         }
-        
+
         public FormValidation doTestConnection(
                 @QueryParameter String servername,
                 @QueryParameter String credentialsId,
@@ -174,20 +174,20 @@ public class SaltAPIStep extends AbstractStepImpl {
         	return SaltAPIBuilder.DescriptorImpl.doTestConnection(servername, credentialsId, authtype, project);
         }
     }
-    
+
     public static class SaltAPIStepExecution extends AbstractSynchronousStepExecution<String> {
         @Inject
         private transient SaltAPIStep saltStep;
-        
+
     	@StepContextParameter
         private transient Run<?, ?> run;
 
         @StepContextParameter
         private transient TaskListener listener;
-        
+
         @StepContextParameter
         private transient Launcher launcher;
-        
+
     	@Override
         protected String run() throws Exception {
     		SaltAPIBuilder saltBuilder = new SaltAPIBuilder(saltStep.servername, saltStep.authtype, saltStep.clientInterface, saltStep.credentialsId);
@@ -200,6 +200,9 @@ public class SaltAPIStep extends AbstractStepImpl {
                 return null;
             }
 
+            String netapi = launcher.getChannel().call(new httpServerCallable(saltBuilder.getServername()));
+            LOGGER.log(Level.FINE, "Discovered netapi: " + netapi);
+
             // Setup connection for auth
     	    JSONObject auth = Utils.createAuthArray(credential, saltBuilder.getAuthtype());
 
@@ -211,24 +214,24 @@ public class SaltAPIStep extends AbstractStepImpl {
                 run.setResult(Result.FAILURE);
                 return null;
     	    }
-    	    
+
     	    // If we got this far, auth must have been good and we've got a token
     	    JSONObject saltFunc = saltBuilder.prepareSaltFunction(run, listener, saltBuilder.getClientInterface().getDescriptor().getDisplayName(), saltBuilder.getTarget(), saltBuilder.getFunction(), saltBuilder.getArguments());
     	    LOGGER.log(Level.FINE, "Sending JSON: " + saltFunc.toString());
 
-            JSONArray returnArray = saltBuilder.performRequest(launcher, run, token, saltBuilder.getServername(), saltFunc, listener, saltBuilder.getBlockbuild());
+            JSONArray returnArray = saltBuilder.performRequest(launcher, run, token, saltBuilder.getServername(), saltFunc, listener, saltBuilder.getBlockbuild(), netapi);
             LOGGER.log(Level.FINE, "Received response: " + returnArray);
-            
+
             // Check for error and print out results
             boolean validFunctionExecution = Utils.validateFunctionCall(returnArray);
             if (!validFunctionExecution) {
                 listener.error("One or more minion did not return code 0\n");
                 run.setResult(Result.FAILURE);
             }
-            
+
     		return returnArray.toString();
         }
-    	
+
         private static final long serialVersionUID = 1L;
     }
 

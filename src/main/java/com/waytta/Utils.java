@@ -38,7 +38,7 @@ public class Utils {
 
     public static String getToken(Launcher launcher, String servername, JSONObject auth) throws InterruptedException, IOException {
         String token = "";
-        JSONObject httpResponse = launcher.getChannel().call(new saltAPI(servername + "/login", auth, null));
+        JSONObject httpResponse = launcher.getChannel().call(new httpCallable(servername + "/login", auth, null));
         try {
             JSONArray returnArray = httpResponse.getJSONArray("return");
             for (Object o : returnArray) {
@@ -114,10 +114,24 @@ public class Utils {
                 JSONObject possibleMinion = JSONObject.fromObject(o);
                 for (Object name : possibleMinion.names()) {
                     Object field = possibleMinion.get(name.toString());
-                    
+
                     // Match test failedJSON/commandNotAvailable.json 
                     Pattern notFoundPattern = Pattern.compile(".*/bin/sh: 1: \\w+: not found.*");
                     Matcher matcher = notFoundPattern.matcher(field.toString());
+                    if (matcher.matches()) {
+                        return false;
+                    }
+
+                    // Match test failedJSON/duplicateStateName.json 
+                    Pattern renderingFailed = Pattern.compile(".*Rendering SLS '[\\w:.-]*' failed:.*");
+                    matcher = renderingFailed.matcher(field.toString());
+                    if (matcher.matches()) {
+                        return false;
+                    }
+
+                    // Match test failedJSON/ERROR.json 
+                    Pattern errorFail = Pattern.compile(".*ERROR: Specified.*");
+                    matcher = errorFail.matcher(field.toString());
                     if (matcher.matches()) {
                         return false;
                     }
@@ -126,12 +140,6 @@ public class Utils {
                     if (field.toString().contains(" is not available.")) {
                         return false;
                     }
-                    
-                    // detect errors like "return":[{"minionname":["Rendering SLS...
-                    // failed"]}]
-                    if (field instanceof JSONArray) {
-                        return false;
-                    } 
                 }
 
                 // test if normal minion results are a JSONArray which indicates
@@ -162,7 +170,6 @@ public class Utils {
                 }
             }
         }
-
         return result;
     }
 
