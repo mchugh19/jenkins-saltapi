@@ -125,7 +125,6 @@ public class Builds {
         return returnArray;
     }
 
-
     public static JSONArray runBlockingBuild(Launcher launcher, Run build, String myservername,
             String token, JSONObject saltFunc, TaskListener listener, int pollTime, int minionTimeout, String netapi) throws IOException, InterruptedException {
         JSONArray returnArray = new JSONArray();
@@ -133,7 +132,7 @@ public class Builds {
         String jid = "";
         // Send request to /minion url. This will give back a jid which we
         // will need to poll and lookup for completion
-        httpResponse = launcher.getChannel().call(new httpCallable(myservername + "/minions", saltFunc, token));
+        httpResponse = launcher.getChannel().call(new HttpCallable(myservername + "/minions", saltFunc, token));
         try {
             returnArray = httpResponse.getJSONArray("return");
             for (Object o : returnArray) {
@@ -153,17 +152,12 @@ public class Builds {
         JSONArray minionsArray = new JSONArray();
         JSONObject resultObject = new JSONObject();
         JSONArray httpArray = new JSONArray();
-        httpResponse = launcher.getChannel().call(new httpCallable(myservername + "/jobs/" + jid, null, token));
-        try {
-            httpArray = returnData(httpResponse, netapi);
-            for (Object o : httpArray) {
-                JSONObject line = (JSONObject) o;
-                minionsArray = line.getJSONArray("Minions");
-                resultObject = line.getJSONObject("Result");
-            }
-        } catch (Exception e) {
-            listener.error(httpResponse.toString(2));
-            build.setResult(Result.FAILURE);
+        httpResponse = launcher.getChannel().call(new HttpCallable(myservername + "/jobs/" + jid, null, token));
+        httpArray = returnData(httpResponse, netapi);
+        for (Object o : httpArray) {
+            JSONObject line = (JSONObject) o;
+            minionsArray = line.getJSONArray("Minions");
+            resultObject = line.getJSONObject("Result");
         }
 
         // Check Minions array for number of targets minions
@@ -183,13 +177,13 @@ public class Builds {
         }
         while (numMinionsDone < numMinions) {
             try {
-                Thread.sleep(pollTime * 1000);
+                Thread.sleep(pollTime * 1000L);
             } catch (InterruptedException ex) {
                 Thread.currentThread().interrupt();
                 // Allow user to cancel job in jenkins interface
                 throw new InterruptedException();
             }
-            httpResponse = launcher.getChannel().call(new httpCallable(myservername + "/jobs/" + jid, null, token));
+            httpResponse = launcher.getChannel().call(new HttpCallable(myservername + "/jobs/" + jid, null, token));
             httpArray = returnData(httpResponse, netapi);
             numMinionsDone = returnedMinions(httpArray);
 
@@ -210,7 +204,7 @@ public class Builds {
                     int numberChecksRemain = minionTimeout % pollTime;
                     // Check every pollTime seconds until minionTimeout.
                     for (int i=0; i<numberChecks; i++) {
-                        httpResponse = launcher.getChannel().call(new httpCallable(myservername + "/jobs/" + jid, null, token));
+                        httpResponse = launcher.getChannel().call(new HttpCallable(myservername + "/jobs/" + jid, null, token));
                         httpArray = returnData(httpResponse, netapi);
                         numMinionsDone = returnedMinions(httpArray);
                         if (numMinionsDone >= numMinions) {
@@ -218,19 +212,19 @@ public class Builds {
                             returnArray.add(httpArray);
                             return returnArray;
                         }
-                        Thread.sleep(pollTime * 1000);
+                        Thread.sleep(pollTime * 1000L);
                     }
                     if (numberChecksRemain > 0) {
                         // If on last iteration of loop, sleep remainder between
                         // pollTime and minionTimeout to fully reach minionTimeout
-                        Thread.sleep(numberChecksRemain * 1000);
+                        Thread.sleep(numberChecksRemain * 1000L);
                     }
                 } catch (InterruptedException ex) {
                     Thread.currentThread().interrupt();
                     // Allow user to cancel job in jenkins interface
                     throw new InterruptedException();
                 }
-                httpResponse = launcher.getChannel().call(new httpCallable(myservername + "/jobs/" + jid, null, token));
+                httpResponse = launcher.getChannel().call(new HttpCallable(myservername + "/jobs/" + jid, null, token));
                 httpArray = returnData(httpResponse, netapi);
                 numMinionsDone = returnedMinions(httpArray);
                 if (numMinionsDone < numMinions) {

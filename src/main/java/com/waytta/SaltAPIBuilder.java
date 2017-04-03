@@ -96,7 +96,7 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
     }
 
     public String getTargettype() {
-    	return clientInterface.getTargetType();
+    	return clientInterface.getTargettype();
     }
 
     public String getFunction() {
@@ -191,7 +191,7 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
 	    JSONObject auth = Utils.createAuthArray(credential, authtype);
 
 	    // Get an auth token
-	    serverToken serverToken = Utils.getToken(launcher, myservername, auth);
+	    ServerToken serverToken = Utils.getToken(launcher, myservername, auth);
 	    String token = serverToken.getToken();
 	    String netapi = serverToken.getServer();
 	    LOGGER.log(Level.FINE, "Discovered netapi: " + netapi);
@@ -261,11 +261,11 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
 	        // Cleanup myTag to remove duplicate / and urlencode
 	        myTag = myTag.replaceAll("^/", "");
 	        myTag = URLEncoder.encode(myTag, "UTF-8");
-	        httpResponse = launcher.getChannel().call(new httpCallable(serverName + "/hook/" + myTag, saltFunc, token));
+	        httpResponse = launcher.getChannel().call(new HttpCallable(serverName + "/hook/" + myTag, saltFunc, token));
 	        returnArray.add(httpResponse);
 	    } else {
 	        // Just send a salt request to /. Don't wait for reply
-	        httpResponse = launcher.getChannel().call(new httpCallable(serverName, saltFunc, token));
+	        httpResponse = launcher.getChannel().call(new HttpCallable(serverName, saltFunc, token));
 	        returnArray = httpResponse.getJSONArray("return");
 	    }
 
@@ -384,7 +384,11 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
                 return FormValidation.error("CredentialId error: no credential found with given ID.");
             }
 
-            Launcher launcher = Jenkins.getInstance().createLauncher(TaskListener.NULL);
+            Jenkins jenkins = Jenkins.getInstance();
+            if (jenkins == null) {
+                throw new IllegalStateException("Jenkins has not been started, or was already shut down");
+            }
+            Launcher launcher = jenkins.createLauncher(TaskListener.NULL);
 
             if (!servername.matches("\\{\\{\\w+\\}\\}")) {
             	JSONObject auth = Utils.createAuthArray(usedCredential, authtype);

@@ -66,7 +66,7 @@ public class SaltAPIStep extends AbstractStepImpl {
     }
 
     public String getTargettype() {
-    	return clientInterface.getTargetType();
+    	return clientInterface.getTargettype();
     }
 
     public String getFunction() {
@@ -204,7 +204,7 @@ public class SaltAPIStep extends AbstractStepImpl {
     	    JSONObject auth = Utils.createAuthArray(credential, saltBuilder.getAuthtype());
 
     	    // Get an auth token
-            serverToken serverToken = Utils.getToken(launcher, saltBuilder.getServername(), auth);
+            ServerToken serverToken = Utils.getToken(launcher, saltBuilder.getServername(), auth);
             String token = serverToken.getToken();
             String netapi = serverToken.getServer();
             LOGGER.log(Level.FINE, "Discovered netapi: " + netapi);
