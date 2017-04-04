@@ -176,7 +176,6 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
         String myfunction = Utils.paramorize(build, listener, getFunction());
         String myarguments = Utils.paramorize(build, listener, getArguments());
 
-        boolean myBlockBuild = getBlockbuild();
         boolean jobSuccess = true;
 
         StandardUsernamePasswordCredentials credential = CredentialsProvider.findCredentialById(
@@ -200,7 +199,7 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
 	    JSONObject saltFunc = prepareSaltFunction(build, listener, myClientInterface, mytarget, myfunction, myarguments);
 	    LOGGER.log(Level.FINE, "Sending JSON: " + saltFunc.toString());
 
-        JSONArray returnArray = performRequest(launcher, build, token, myservername, saltFunc, listener, myBlockBuild, netapi);
+        JSONArray returnArray = performRequest(launcher, build, token, myservername, saltFunc, listener, netapi);
         LOGGER.log(Level.FINE, "Received response: " + returnArray);
 
         // Save saltapi output to env if requested
@@ -243,18 +242,11 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
         return jobSuccess;
     }
 
-	public JSONArray performRequest(Launcher launcher, Run build, String token, String serverName, JSONObject saltFunc, TaskListener listener, boolean blockBuild, String netapi) throws InterruptedException, IOException {
+	public JSONArray performRequest(Launcher launcher, Run build, String token, String serverName, JSONObject saltFunc, TaskListener listener, String netapi) throws InterruptedException, IOException {
 	    JSONArray returnArray = new JSONArray();
 	    JSONObject httpResponse = new JSONObject();
 	    // Access different salt-api endpoints depending on function
-	    if (blockBuild) {
-	        // when sending to the /minion endpoint, use local_async instead of just local
-	        saltFunc.element("client", "local_async");
-	        int jobPollTime = getJobPollTime();
-	        int minionTimeout = getMinionTimeout();
-	        // poll /minion for response
-	        returnArray = Builds.runBlockingBuild(launcher, build, serverName, token, saltFunc, listener, jobPollTime, minionTimeout, netapi);
-	    } else if (!saltFunc.has("client")) {
+	    if (!saltFunc.has("client")) {
 	        // only hook communications should start with an empty function object
 	        // publish event to salt event bus to /hook
 	        String myTag = Utils.paramorize(build, listener, getTag());
@@ -263,6 +255,11 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
 	        myTag = URLEncoder.encode(myTag, "UTF-8");
 	        httpResponse = launcher.getChannel().call(new HttpCallable(serverName + "/hook/" + myTag, saltFunc, token));
 	        returnArray.add(httpResponse);
+	    } else if (saltFunc.get("client") == "local_async") {
+	        int jobPollTime = getJobPollTime();
+	        int minionTimeout = getMinionTimeout();
+	        // poll /minion for response
+	        returnArray = Builds.runBlockingBuild(launcher, build, serverName, token, saltFunc, listener, jobPollTime, minionTimeout, netapi);
 	    } else {
 	        // Just send a salt request to /. Don't wait for reply
 	        httpResponse = launcher.getChannel().call(new HttpCallable(serverName, saltFunc, token));
@@ -278,6 +275,12 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
 		saltFunc.put("client", myClientInterface);
 
 		switch (myClientInterface) {
+		case "local":
+	        if (getBlockbuild()) {
+	            // when sending to the /minion endpoint, use local_async instead of just local
+	            saltFunc.element("client", "local_async");
+	        }
+	        break;
 		case "local_batch":
 		    String mybatch = Utils.paramorize(build, listener, getBatchSize());
 		    saltFunc.put("batch", mybatch);

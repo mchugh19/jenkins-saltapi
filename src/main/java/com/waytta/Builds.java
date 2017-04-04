@@ -115,8 +115,8 @@ public class Builds {
     public static JSONArray returnData(JSONObject saltReturn, String netapi) {
         JSONArray returnArray = new JSONArray();
 
-        // Tornado is keyed with return
         if (netapi.contains("TornadoServer")) {
+            // Tornado is keyed with return
             returnArray = saltReturn.getJSONArray("return");
         } else {
             // cherrypy is keyed with info

@@ -7,6 +7,7 @@ import hudson.Launcher;
 import hudson.remoting.Callable;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
+import hudson.model.Result;
 import hudson.security.ACL;
 import hudson.util.Secret;
 import jenkins.model.Jenkins;
@@ -42,157 +43,156 @@ import com.waytta.clientinterface.*;
 @PrepareForTest({JSONObject.class, Jenkins.class, SaltAPIBuilder.DescriptorImpl.class, CredentialsProvider.class, Utils.class})
 public class SaltAPIBuilderTest {
 
-    private static final Integer TESTINT = (int)(new Date().getTime());
-    private static final Integer TEN = new Integer(10);
-    private static final String DEFAULT_CREDENTIAL_ID = "credentials_id";
-    private static final hudson.util.Secret DEFAULT_CREDENTIAL_PASSWORD = Secret.fromString("junit_password");
-    private static final String JSON_FORMAT = "json";
-    BasicClient clientInterfaces;
-    private List<StandardUsernamePasswordCredentials> credentials;
+    private String target = "*";
+    private String function = "cmd.run";
+    private String arguments = "'ls -la'";
+    private String targettype = "glob";
+    private String mods = "";
+    private String pillarvalue = "{\"key\":\"value\"}";
 
-
-    @Before
-    public void setup(){
-        //clientInterfaces = mock(JSONObject.class);
-        //when(clientInterfaces.has("clientInterface")).thenReturn(TRUE);
-        credentials = new ArrayList<StandardUsernamePasswordCredentials>();
-    }
-
-
-    private void validateBuilder(SaltAPIBuilder builder,
-                                 String clientInterfaces,
-                                 String mods,
-                                 String pillarValue){
-        validateBuilder(builder, clientInterfaces, TEN, "100%", mods, pillarValue );
-    }
-    private void validateBuilder(SaltAPIBuilder builder,
-                                 String clientInterface) {
-        validateBuilder( builder, clientInterface, TEN, "100%", "", "");
-    }
-
-    private void validateBuilder(String clientInterface,
-                                 SaltAPIBuilder builder,
-                                 String mods) {
-        validateBuilder( builder, clientInterface, TEN, "100%", mods, "");
-    }
-
-    private void validateBuilder(SaltAPIBuilder builder,
-                                 String clientInterface,
-                                 String batchSize) {
-        validateBuilder( builder, clientInterface, TEN, batchSize, "", "");
-    }
-
-    private void validateBuilder(SaltAPIBuilder builder,
-                                 String clientInterface,
-                                 Integer jobPollTime) {
-        validateBuilder( builder, clientInterface, jobPollTime, "100%", "", "");
-    }
-
-    private void validateBuilder(SaltAPIBuilder builder,
-                                 String clientInterface,
-                                 Integer jobPollTime,
-                                 String batchSize,
-                                 String mods,
-                                 String pillarValue) {
-        assertFalse(builder.getBlockbuild());
-        assertEquals(clientInterface, builder.getClientInterface());
-        assertEquals(batchSize, builder.getBatchSize());
-        //assertEquals(jobPollTime, builder.getJobPollTime());
-        assertEquals(mods, builder.getMods());
-        assertEquals(pillarValue, builder.getPillarvalue());
-    }
-
-    SaltAPIBuilder build() {
-        return new SaltAPIBuilder(
-                "servername",
-                "authtype",
-                clientInterfaces,
-                DEFAULT_CREDENTIAL_ID);
-    }
 
     @Test
-    public void testPerformWithNoCredentials() throws Exception {
-        SaltAPIBuilder builder = setupBuilderForDefaultPerform();
+    public void testHookPrepareSaltFunction() throws Exception {
         AbstractBuild jenkinsBuild = mock(AbstractBuild.class);
-        Launcher launcher = mock(Launcher.class);
         BuildListener buildListener = mock(BuildListener.class);
 
-        // TODO fix test workspace errors
-        //assertFalse(builder.perform(jenkinsBuild, launcher, buildListener));
+        HookClient client = new HookClient("{\"key3\":\"value\"}", "/test/url");
+        String myClientInterface = "hook";
+        SaltAPIBuilder saltAPIBuilder = new SaltAPIBuilder("name", "pam", client, "creds");
+
+        JSONObject testObject = JSONObject.fromObject("{\"key3\":\"value\"}");
+
+        JSONObject result = saltAPIBuilder.prepareSaltFunction(jenkinsBuild, buildListener, myClientInterface, target, function, arguments);
+        assertEquals(testObject, result);
     }
 
     @Test
-    public void testPerformWithFailingCredentials() throws Exception {
-        StandardUsernamePasswordCredentials mockCred = mock(StandardUsernamePasswordCredentials.class);
-        when(mockCred.getId()).thenReturn(DEFAULT_CREDENTIAL_ID);
-        when(mockCred.getPassword()).thenReturn(DEFAULT_CREDENTIAL_PASSWORD);
-        credentials.add(mockCred);
-
-        SaltAPIBuilder builder = setupBuilderForDefaultPerform();
-
+    public void testLocalBatchClientPrepareSaltFunction() throws Exception {
+        AbstractBuild jenkinsBuild = mock(AbstractBuild.class);
         BuildListener buildListener = mock(BuildListener.class);
         PrintStream printer = mock(PrintStream.class);
         when(buildListener.getLogger()).thenReturn(printer);
 
-        AbstractBuild jenkinsBuild = mock(AbstractBuild.class);
-        Launcher launcher = mock(Launcher.class);
+        LocalBatchClient client = new LocalBatchClient(function, arguments, "50%", target, targettype);
+        String myClientInterface = "local_batch";
+        SaltAPIBuilder saltAPIBuilder = new SaltAPIBuilder("name", "pam", client, "creds");
 
-        // TODO fix test workspace errors
-        //assertFalse(builder.perform(jenkinsBuild, launcher, buildListener));
+        JSONObject testObject = JSONObject.fromObject("{"
+                + "\"client\":\"local_batch\","
+                + "\"batch\":\"50%\","
+                + "\"tgt\":\"*\","
+                + "\"expr_form\":\"glob\","
+                + "\"fun\":\"cmd.run\","
+                + "\"arg\":\"ls -la\","
+                + "\"kwarg\":{}"
+                + "}");
+
+        JSONObject result = saltAPIBuilder.prepareSaltFunction(jenkinsBuild, buildListener, myClientInterface, target, function, arguments);
+        assertEquals(testObject, result);
     }
 
     @Test
-    public void testPerformWithPassingCredentials() throws Exception {
-        StandardUsernamePasswordCredentials mockCred = mock(StandardUsernamePasswordCredentials.class);
-        when(mockCred.getId()).thenReturn(DEFAULT_CREDENTIAL_ID);
-        when(mockCred.getPassword()).thenReturn(DEFAULT_CREDENTIAL_PASSWORD);
-        credentials.add(mockCred);
-
-        SaltAPIBuilder builder = setupBuilderForDefaultPerform();
-        mockStatic(Utils.class);
-        when(Utils.getToken(any(Launcher.class), anyString(), any(JSONObject.class))).thenReturn(new ServerToken(null, null));
-
+    public void testLocalClientPrepareSaltFunction() throws Exception {
+        AbstractBuild jenkinsBuild = mock(AbstractBuild.class);
         BuildListener buildListener = mock(BuildListener.class);
         PrintStream printer = mock(PrintStream.class);
         when(buildListener.getLogger()).thenReturn(printer);
 
+        LocalClient client = new LocalClient(function, arguments, target, targettype);
+        String myClientInterface = "local";
+        SaltAPIBuilder saltAPIBuilder = new SaltAPIBuilder("name", "pam", client, "creds");
+
+        JSONObject testObject = JSONObject.fromObject("{"
+                + "\"client\":\"local\","
+                + "\"tgt\":\"*\","
+                + "\"expr_form\":\"glob\","
+                + "\"fun\":\"cmd.run\","
+                + "\"arg\":\"ls -la\","
+                + "\"kwarg\":{}"
+                + "}");
+
+        JSONObject result = saltAPIBuilder.prepareSaltFunction(jenkinsBuild, buildListener, myClientInterface, target, function, arguments);
+        assertEquals(testObject, result);
+    }
+
+    @Test
+    public void testLocalAsyncClientPrepareSaltFunction() throws Exception {
         AbstractBuild jenkinsBuild = mock(AbstractBuild.class);
-        Launcher launcher = mock(Launcher.class);
-        //when(Utils.paramorize(jenkinsBuild, buildListener, builder.getTarget())).thenReturn("junit_mytarget");
-        //when(Utils.paramorize(jenkinsBuild, buildListener, builder.getFunction())).thenReturn("junit_myfunction");
-        //when(Utils.paramorize(jenkinsBuild, buildListener, builder.getArguments())).thenReturn("junit_myarguments");
-        JSONObject httpResponse = mock(JSONObject.class);
-        //when(launcher.getChannel().call(new saltAPI(anyString(), any(JSONObject.class),anyString()))).thenReturn(httpResponse);
-        when(httpResponse.toString(2)).thenReturn("junit_httpResponse");
-        JSONArray returnArray = new JSONArray();
-        returnArray.add(0,"junit");
-        when(httpResponse.getJSONArray("return")).thenReturn(returnArray);
-        when(Utils.validateFunctionCall(returnArray)).thenReturn(true);
+        BuildListener buildListener = mock(BuildListener.class);
+        PrintStream printer = mock(PrintStream.class);
+        when(buildListener.getLogger()).thenReturn(printer);
 
-        // TODO fix test workspace errors
-        //assertTrue(builder.perform(jenkinsBuild, launcher, buildListener));
+        LocalClient client = mock(LocalClient.class);
+        when(client.getBlockbuild()).thenReturn(TRUE);
+        when(client.getTargettype()).thenReturn("glob");
+        when(client.getFunction()).thenReturn("test.ping");
+        when(client.getTarget()).thenReturn("minion1");
+
+        String myClientInterface = "local";
+        SaltAPIBuilder saltAPIBuilder = new SaltAPIBuilder("name", "pam", client, "creds");
+
+        JSONObject testObject = JSONObject.fromObject("{"
+                + "\"client\":\"local_async\","
+                + "\"tgt\":\"*\","
+                + "\"expr_form\":\"glob\","
+                + "\"fun\":\"cmd.run\","
+                + "\"arg\":\"ls -la\","
+                + "\"kwarg\":{}"
+                + "}");
+
+        JSONObject result = saltAPIBuilder.prepareSaltFunction(jenkinsBuild, buildListener, myClientInterface, target, function, arguments);
+        assertEquals(testObject, result);
     }
 
-    private SaltAPIBuilder setupBuilderForDefaultPerform() {
-        return setupBuilderForDefaultPerform(JSON_FORMAT);
+    @Test
+    public void testLocalSubsetClientPrepareSaltFunction() throws Exception {
+        AbstractBuild jenkinsBuild = mock(AbstractBuild.class);
+        BuildListener buildListener = mock(BuildListener.class);
+        PrintStream printer = mock(PrintStream.class);
+        when(buildListener.getLogger()).thenReturn(printer);
+
+        LocalSubsetClient client = new LocalSubsetClient(function, arguments, "5", target, targettype);
+        String myClientInterface = "local_subset";
+        SaltAPIBuilder saltAPIBuilder = new SaltAPIBuilder("name", "pam", client, "creds");
+
+        JSONObject testObject = JSONObject.fromObject("{"
+                + "\"client\":\"local_subset\","
+                + "\"sub\":\"5\","
+                + "\"tgt\":\"*\","
+                + "\"expr_form\":\"glob\","
+                + "\"fun\":\"cmd.run\","
+                + "\"arg\":\"ls -la\","
+                + "\"kwarg\":{}"
+                + "}");
+
+        JSONObject result = saltAPIBuilder.prepareSaltFunction(jenkinsBuild, buildListener, myClientInterface, target, function, arguments);
+        assertEquals(testObject, result);
     }
 
-    private SaltAPIBuilder setupBuilderForDefaultPerform(String outputFormat) {
 
-        //when(clientInterfaces.get("clientInterface")).thenReturn("JUNIT");
-        SaltAPIBuilder.DescriptorImpl descriptor = mock(SaltAPIBuilder.DescriptorImpl.class);
-        mockStatic(Jenkins.class);
-        Jenkins jenkins = mock(Jenkins.class);
-        when(Jenkins.getInstance()).thenReturn(jenkins);
-        when(jenkins.getDescriptorOrDie((Class<? extends hudson.model.Describable>) any())).thenReturn(descriptor);
-        when(descriptor.getOutputFormat()).thenReturn(outputFormat);
+    @Test
+    public void testRunnerClientPrepareSaltFunction() throws Exception {
+        AbstractBuild jenkinsBuild = mock(AbstractBuild.class);
+        BuildListener buildListener = mock(BuildListener.class);
+        PrintStream printer = mock(PrintStream.class);
+        when(buildListener.getLogger()).thenReturn(printer);
 
-        mockStatic(CredentialsProvider.class);
-        when(CredentialsProvider.lookupCredentials(
-                StandardUsernamePasswordCredentials.class, jenkins, ACL.SYSTEM, new ArrayList<DomainRequirement>())).thenReturn(credentials);;
+        RunnerClient client = new RunnerClient(function, arguments, mods, pillarvalue);
+        String myClientInterface = "runner";
+        SaltAPIBuilder saltAPIBuilder = new SaltAPIBuilder("name", "pam", client, "creds");
 
-        SaltAPIBuilder builder = build();
+        JSONObject testObject = JSONObject.fromObject("{"
+                + "\"client\":\"runner\","
+                + "\"mods\":\"\","
+                + "\"pillar\":{\"key\":\"value\"},"
+                + "\"tgt\":\"*\","
+                + "\"expr_form\":\"\","
+                + "\"fun\":\"cmd.run\","
+                + "\"arg\":\"ls -la\","
+                + "\"kwarg\":{}"
+                + "}");
 
-        return builder;
+        JSONObject result = saltAPIBuilder.prepareSaltFunction(jenkinsBuild, buildListener, myClientInterface, target, function, arguments);
+        assertEquals(testObject, result);
     }
 }

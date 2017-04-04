@@ -213,7 +213,7 @@ public class SaltAPIStep extends AbstractStepImpl {
     	    JSONObject saltFunc = saltBuilder.prepareSaltFunction(run, listener, saltBuilder.getClientInterface().getDescriptor().getDisplayName(), saltBuilder.getTarget(), saltBuilder.getFunction(), saltBuilder.getArguments());
     	    LOGGER.log(Level.FINE, "Sending JSON: " + saltFunc.toString());
 
-            JSONArray returnArray = saltBuilder.performRequest(launcher, run, token, saltBuilder.getServername(), saltFunc, listener, saltBuilder.getBlockbuild(), netapi);
+            JSONArray returnArray = saltBuilder.performRequest(launcher, run, token, saltBuilder.getServername(), saltFunc, listener, netapi);
             LOGGER.log(Level.FINE, "Received response: " + returnArray);
 
             // Check for error and print out results

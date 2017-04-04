@@ -53,7 +53,6 @@ public class BuildsTest {
                 + "\"kwarg\":{\"keyword\":\"value=thing\"},"
                 + "}");
 
-        System.out.println(saltFunc.toString());
         Assert.assertTrue(expectedResult.equals(saltFunc));
     }
 
@@ -99,7 +98,6 @@ public class BuildsTest {
                 + "\"kwarg\":{\"max\": 13},"
                 + "}");
 
-        System.out.println(saltFunc.toString());
         Assert.assertTrue(expectedResult.equals(saltFunc));
     }
 

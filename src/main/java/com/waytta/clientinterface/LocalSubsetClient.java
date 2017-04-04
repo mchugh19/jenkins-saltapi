@@ -8,7 +8,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.jenkinsci.Symbol;
-import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import com.waytta.Utils;
