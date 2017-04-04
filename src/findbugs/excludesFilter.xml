@@ -5,4 +5,24 @@
 		<Method name="performRequest" />
 		<Bug pattern="DLS_DEAD_LOCAL_STORE" />
 	</Match>
+	<Match>
+		<Class name="com.waytta.Builds" />
+		<Method name="returnedMinions" />
+		<Bug pattern="DLS_DEAD_LOCAL_STORE" />
+	</Match>
+	<Match>
+		<Class name="com.waytta.Builds" />
+		<Method name="returnData" />
+		<Bug pattern="DLS_DEAD_LOCAL_STORE" />
+	</Match>
+	<Match>
+		<Class name="com.waytta.Builds" />
+		<Method name="runBlockingBuild" />
+		<Bug pattern="DLS_DEAD_LOCAL_STORE" />
+	</Match>
+	<Match>
+		<Class name="com.waytta.HttpCallable" />
+		<Method name="call" />
+		<Bug pattern="DLS_DEAD_LOCAL_STORE" />
+	</Match>
 </FindBugsFilter>

@@ -1,6 +1,6 @@
 package com.waytta;
 
-import org.junit.Assert;
+import static org.junit.Assert.assertEquals;
 import org.junit.Test;
 
 import net.sf.json.JSONObject;
@@ -30,7 +30,7 @@ public class BuildsTest {
                 + 	 "}"
                 + "}}");
 
-        Assert.assertTrue(expectedResult.equals(saltFunc));
+        assertEquals(expectedResult, saltFunc);
     }
 
     @Test
@@ -53,8 +53,7 @@ public class BuildsTest {
                 + "\"kwarg\":{\"keyword\":\"value=thing\"},"
                 + "}");
 
-        System.out.println(saltFunc.toString());
-        Assert.assertTrue(expectedResult.equals(saltFunc));
+        assertEquals(expectedResult, saltFunc);
     }
 
     @Test
@@ -77,7 +76,7 @@ public class BuildsTest {
                 + "\"kwarg\":{},"
                 + "}");
 
-        Assert.assertTrue(expectedResult.equals(saltFunc));
+        assertEquals(expectedResult, saltFunc);
     }
 
     @Test
@@ -99,8 +98,7 @@ public class BuildsTest {
                 + "\"kwarg\":{\"max\": 13},"
                 + "}");
 
-        System.out.println(saltFunc.toString());
-        Assert.assertTrue(expectedResult.equals(saltFunc));
+        assertEquals(expectedResult, saltFunc);
     }
 
 }
