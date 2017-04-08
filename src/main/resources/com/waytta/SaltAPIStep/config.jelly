@@ -21,9 +21,4 @@
 
   <f:dropdownDescriptorSelector title="Client Interface" field="clientInterface"
     descriptors="${descriptor.clientDescriptors}" />
-
-  <f:entry title="Save output to environment variable" field="saveEnvVar" description="Save Salt return into environment variable SALTBUILDOUTPUT">
-    <f:checkbox />
-  </f:entry>
-
 </j:jelly>

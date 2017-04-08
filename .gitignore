@@ -1,1 +1,6 @@
 /target
+/work*
+.project
+.settings/
+.classpath
+/bin/
