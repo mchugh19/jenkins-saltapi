@@ -1,0 +1,10 @@
+[{
+	"minion1": {
+		"return": ["No matching sls found for 'nope.nope' in env 'base'"],
+		"out": "highstate"
+	},
+	"master": {
+		"return": ["No matching sls found for 'nope.nope' in env 'base'"],
+		"out": "highstate"
+	}
+}]

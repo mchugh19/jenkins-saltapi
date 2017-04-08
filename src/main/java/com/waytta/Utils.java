@@ -123,6 +123,11 @@ public class Utils {
                     if (field.toString().contains(" is not available.")) {
                         return false;
                     }
+
+                    // Match test failedJSON/missingState.json
+                    if (field.toString().contains("No matching sls found for ")) {
+                        return false;
+                    }
                 }
 
                 // test if normal minion results are a JSONArray which indicates

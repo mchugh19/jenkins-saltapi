@@ -28,6 +28,7 @@ import hudson.model.Queue;
 import hudson.model.Result;
 import hudson.model.queue.Tasks;
 import hudson.model.Job;
+import hudson.AbortException;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -161,14 +162,22 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
     }
 
     @Override
-    public void perform(Run<?, ?> run, FilePath workspace, Launcher launcher, TaskListener listener) throws InterruptedException, IOException {
-    	boolean success = perform(run, launcher, listener);
+    public void perform(Run<?, ?> run, FilePath workspace, Launcher launcher, TaskListener listener)
+            throws InterruptedException, IOException {
+    	boolean success;
+        try {
+            success = perform(run, launcher, listener);
+        } catch (SaltException e) {
+            run.setResult(Result.FAILURE);
+            throw new AbortException("Salt run failure: " + e);
+        }
     	if (!success) {
     	    run.setResult(Result.FAILURE);
+    	    throw new AbortException("Salt run failure");
     	}
     }
 
-    public boolean perform(Run<?, ?> build, Launcher launcher, TaskListener listener) throws InterruptedException, IOException {
+    public boolean perform(Run<?, ?> build, Launcher launcher, TaskListener listener) throws InterruptedException, IOException, SaltException {
     	String myOutputFormat = getDescriptor().getOutputFormat();
         String myClientInterface = clientInterface.getDescriptor().getDisplayName();
         String myservername = Utils.paramorize(build, listener, servername);
@@ -242,7 +251,8 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
         return jobSuccess;
     }
 
-	public JSONArray performRequest(Launcher launcher, Run build, String token, String serverName, JSONObject saltFunc, TaskListener listener, String netapi) throws InterruptedException, IOException {
+	public JSONArray performRequest(Launcher launcher, Run build, String token, String serverName, JSONObject saltFunc, TaskListener listener, String netapi)
+	        throws InterruptedException, IOException, SaltException {
 	    JSONArray returnArray = new JSONArray();
 	    JSONObject httpResponse = new JSONObject();
 	    // Access different salt-api endpoints depending on function

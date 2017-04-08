@@ -126,7 +126,8 @@ public class Builds {
     }
 
     public static JSONArray runBlockingBuild(Launcher launcher, Run build, String myservername,
-            String token, JSONObject saltFunc, TaskListener listener, int pollTime, int minionTimeout, String netapi) throws IOException, InterruptedException {
+            String token, JSONObject saltFunc, TaskListener listener, int pollTime, int minionTimeout, String netapi)
+                    throws IOException, InterruptedException, SaltException {
         JSONArray returnArray = new JSONArray();
         JSONObject httpResponse = new JSONObject();
         String jid = "";
@@ -241,6 +242,7 @@ public class Builds {
                             "Minions timed out:\n" + minionsArray.toString() + "\n\n");
                     if (timeoutFail) {
                         build.setResult(Result.FAILURE);
+                        throw new SaltException(httpArray.getJSONObject(0).getJSONObject("Result").toString());
                     }
                     returnArray.clear();
                     returnArray.add(httpArray.getJSONObject(0).getJSONObject("Result"));
