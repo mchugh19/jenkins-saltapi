@@ -126,25 +126,21 @@ public class Builds {
     }
 
     public static JSONArray runBlockingBuild(Launcher launcher, Run build, String myservername,
-            String token, JSONObject saltFunc, TaskListener listener, int pollTime, int minionTimeout, String netapi) throws IOException, InterruptedException {
+            String token, JSONObject saltFunc, TaskListener listener, int pollTime, int minionTimeout, String netapi)
+                    throws IOException, InterruptedException, SaltException {
         JSONArray returnArray = new JSONArray();
         JSONObject httpResponse = new JSONObject();
         String jid = "";
         // Send request to /minion url. This will give back a jid which we
         // will need to poll and lookup for completion
         httpResponse = launcher.getChannel().call(new HttpCallable(myservername + "/minions", saltFunc, token));
-        try {
-            returnArray = httpResponse.getJSONArray("return");
-            for (Object o : returnArray) {
-                JSONObject line = (JSONObject) o;
-                jid = line.getString("jid");
-            }
-            // Print out success
-            listener.getLogger().println("Running jid: " + jid);
-        } catch (Exception e) {
-            listener.error(httpResponse.toString(2));
-            build.setResult(Result.FAILURE);
+        returnArray = httpResponse.getJSONArray("return");
+        for (Object o : returnArray) {
+            JSONObject line = (JSONObject) o;
+            jid = line.getString("jid");
         }
+        // Print out success
+        listener.getLogger().println("Running jid: " + jid);
 
         // Request successfully sent. Now use jid to check if job complete
         int numMinions = 0;
@@ -241,6 +237,7 @@ public class Builds {
                             "Minions timed out:\n" + minionsArray.toString() + "\n\n");
                     if (timeoutFail) {
                         build.setResult(Result.FAILURE);
+                        throw new SaltException(httpArray.getJSONObject(0).getJSONObject("Result").toString());
                     }
                     returnArray.clear();
                     returnArray.add(httpArray.getJSONObject(0).getJSONObject("Result"));

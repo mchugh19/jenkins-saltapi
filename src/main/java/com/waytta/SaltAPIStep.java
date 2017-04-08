@@ -1,5 +1,7 @@
 package com.waytta;
 
+import com.waytta.SaltException;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.logging.Level;
@@ -189,15 +191,14 @@ public class SaltAPIStep extends AbstractStepImpl {
         private transient Launcher launcher;
 
     	@Override
-        protected String run() throws Exception {
+        protected String run() throws Exception, SaltException {
     		SaltAPIBuilder saltBuilder = new SaltAPIBuilder(saltStep.servername, saltStep.authtype, saltStep.clientInterface, saltStep.credentialsId);
 
             StandardUsernamePasswordCredentials credential = CredentialsProvider.findCredentialById(
             		saltBuilder.getCredentialsId(), StandardUsernamePasswordCredentials.class, run);
             if (credential == null) {
-                listener.error("Invalid credentials");
                 run.setResult(Result.FAILURE);
-                return null;
+                throw new RuntimeException("Invalid credentials");
             }
 
             // Setup connection for auth
@@ -221,6 +222,7 @@ public class SaltAPIStep extends AbstractStepImpl {
             if (!validFunctionExecution) {
                 listener.error("One or more minion did not return code 0\n");
                 run.setResult(Result.FAILURE);
+                throw new SaltException(returnArray.toString());
             }
 
     		return returnArray.toString();

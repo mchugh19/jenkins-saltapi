@@ -36,7 +36,7 @@ public class Utils {
 
     // replaces $string with value of env($string). Used in conjunction with
     // parameterized builds
-    public static String paramorize(Run build, TaskListener listener, String paramer)
+    public static String paramorize(Run<?, ?> build, TaskListener listener, String paramer)
             throws IOException, InterruptedException {
         Pattern pattern = Pattern.compile("\\{\\{\\w+\\}\\}");
         Matcher matcher = pattern.matcher(paramer);
@@ -121,6 +121,11 @@ public class Utils {
 
                     // Match test failedJSON/functionNotAvailable.json
                     if (field.toString().contains(" is not available.")) {
+                        return false;
+                    }
+
+                    // Match test failedJSON/missingState.json
+                    if (field.toString().contains("No matching sls found for ")) {
                         return false;
                     }
                 }
