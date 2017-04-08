@@ -265,7 +265,7 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep {
 	        myTag = URLEncoder.encode(myTag, "UTF-8");
 	        httpResponse = launcher.getChannel().call(new HttpCallable(serverName + "/hook/" + myTag, saltFunc, token));
 	        returnArray.add(httpResponse);
-	    } else if (saltFunc.get("client") == "local_async") {
+	    } else if (saltFunc.get("client").equals("local_async")) {
 	        int jobPollTime = getJobPollTime();
 	        int minionTimeout = getMinionTimeout();
 	        // poll /minion for response

@@ -134,18 +134,13 @@ public class Builds {
         // Send request to /minion url. This will give back a jid which we
         // will need to poll and lookup for completion
         httpResponse = launcher.getChannel().call(new HttpCallable(myservername + "/minions", saltFunc, token));
-        try {
-            returnArray = httpResponse.getJSONArray("return");
-            for (Object o : returnArray) {
-                JSONObject line = (JSONObject) o;
-                jid = line.getString("jid");
-            }
-            // Print out success
-            listener.getLogger().println("Running jid: " + jid);
-        } catch (Exception e) {
-            listener.error(httpResponse.toString(2));
-            build.setResult(Result.FAILURE);
+        returnArray = httpResponse.getJSONArray("return");
+        for (Object o : returnArray) {
+            JSONObject line = (JSONObject) o;
+            jid = line.getString("jid");
         }
+        // Print out success
+        listener.getLogger().println("Running jid: " + jid);
 
         // Request successfully sent. Now use jid to check if job complete
         int numMinions = 0;
