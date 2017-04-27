@@ -72,6 +72,8 @@ class HttpCallable extends MasterToSlaveCallable<JSONObject, IOException> {
                     // Retry on request timeout
                     if (responseCode == 408) {
                         throw new SocketTimeoutException("408 Response");
+                    } else if (responseCode == 500) {
+                        throw new SocketTimeoutException("500 Response");
                     }
 
                     // http call successful. Exit retry loop.
