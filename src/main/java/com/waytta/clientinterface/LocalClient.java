@@ -3,6 +3,9 @@ package com.waytta.clientinterface;
 import hudson.Extension;
 import org.kohsuke.stapler.QueryParameter;
 import hudson.util.FormValidation;
+
+import java.io.IOException;
+
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -13,30 +16,31 @@ import jenkins.model.Jenkins;
 
 
 public class LocalClient extends BasicClient {
-	public static final int DEFAULT_JOB_POLL_TIME = 10;
-	private int jobPollTime = DEFAULT_JOB_POLL_TIME;
-	private int minionTimeout = 30;
-	private boolean blockbuild = false;
-	private String target;
-	private String targettype;
-	private String function;
-	private String arguments;
+    public static final int DEFAULT_JOB_POLL_TIME = 10;
+    private int jobPollTime = DEFAULT_JOB_POLL_TIME;
+    private int minionTimeout = 30;
+    private boolean blockbuild = false;
+    private String target;
+    private String targettype;
+    private transient String targetType;
+    private String function;
+    private String arguments;
 
     @DataBoundConstructor
     public LocalClient(String function, String arguments, String target, String targettype) {
-    	this.function = function;
-    	this.arguments = arguments;
-    	this.target = target;
-    	this.targettype = targettype;
+        this.function = function;
+        this.arguments = arguments;
+        this.target = target;
+        this.targettype = targettype;
     }
     @Override
     public String getFunction() {
-    	return function;
+        return function;
     }
 
     @Override
     public String getArguments() {
-    	return arguments;
+        return arguments;
     }
 
     @Override
@@ -79,15 +83,24 @@ public class LocalClient extends BasicClient {
         return targettype;
     }
 
+
+    protected Object readResolve() throws IOException {
+        if (targetType != null) {
+            targettype = targetType;
+        }
+        return this;
+    }
+
+
     @Symbol("local") @Extension
     public static class DescriptorImpl extends BasicClientDescriptor {
-    	public DescriptorImpl() {
+        public DescriptorImpl() {
             super(LocalClient.class);
         }
 
         @Override
         public String getDisplayName() {
-        	return "local";
+            return "local";
         }
 
         public FormValidation doCheckFunction(@QueryParameter String value) {

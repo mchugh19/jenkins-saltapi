@@ -41,7 +41,6 @@ import hudson.tasks.Builder;
 import hudson.security.ACL;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
-
 import jenkins.security.MasterToSlaveCallable;
 
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -65,6 +64,29 @@ import net.sf.json.util.JSONUtils;
 public class SaltAPIBuilder extends Builder implements SimpleBuildStep, Serializable {
     private static final long serialVersionUID = 1L;
 
+    @SuppressWarnings("unused")
+    protected Object readResolve() throws IOException {
+        // Support 1.7 and before
+        if (clientInterfaces != null) {
+            arguments = arguments.replaceAll(",", " ");
+
+            if (clientInterfaces.has("clientInterface")) {
+                if (clientInterfaces.getString("clientInterface").equals("local")) {
+                    clientInterface = new LocalClient(function, arguments + " " + kwarguments, target, targettype);
+                    ((LocalClient) clientInterface).setJobPollTime(clientInterfaces.getInt("jobPollTime"));
+                    ((LocalClient) clientInterface).setBlockbuild(clientInterfaces.getBoolean("blockbuild"));
+                } else if (clientInterfaces.getString("clientInterface").equals("local_batch")) {
+                    clientInterface = new LocalBatchClient(function, arguments + " " + kwarguments, batchSize, target, targettype);
+                } else if (clientInterfaces.getString("clientInterface").equals("runner")) {
+                    clientInterface = new RunnerClient(function, arguments + " " + kwarguments, mods, pillarvalue);
+                }
+            }
+            clientInterfaces = null;
+        }
+        return this;
+    }
+
+
     private static final Logger LOGGER = Logger.getLogger("com.waytta.saltstack");
 
     private String servername;
@@ -73,6 +95,33 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep, Serializ
     private boolean saveEnvVar = false;
     private final String credentialsId;
     private boolean saveFile = false;
+
+    @Deprecated
+    private transient JSONObject clientInterfaces;
+    @Deprecated
+    private transient String target;
+    @Deprecated
+    private transient String targettype;
+    @Deprecated
+    private transient String function;
+    @Deprecated
+    private transient String arguments;
+    @Deprecated
+    private transient String kwarguments;
+    @Deprecated
+    private transient String batchSize;
+    @Deprecated
+    private transient String mods;
+    @Deprecated
+    private transient String pillarvalue;
+    @Deprecated
+    private transient Boolean blockbuild;
+    @Deprecated
+    private transient Integer jobPollTime;
+    @Deprecated
+    private transient Boolean usePillar;
+    @Deprecated
+    private transient String pillarkey;
 
 
     @DataBoundConstructor
