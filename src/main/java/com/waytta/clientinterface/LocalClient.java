@@ -16,6 +16,7 @@ import jenkins.model.Jenkins;
 
 
 public class LocalClient extends BasicClient {
+    private static final long serialVersionUID = 1L;
     public static final int DEFAULT_JOB_POLL_TIME = 10;
     private int jobPollTime = DEFAULT_JOB_POLL_TIME;
     private int minionTimeout = 30;

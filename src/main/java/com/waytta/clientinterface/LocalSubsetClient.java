@@ -15,6 +15,7 @@ import com.waytta.Utils;
 
 
 public class LocalSubsetClient extends BasicClient {
+    private static final long serialVersionUID = 1L;
     private String function;
     private String arguments;
     private String subset = "1";

@@ -13,6 +13,7 @@ import com.waytta.Utils;
 
 
 public class LocalBatchClient extends BasicClient {
+    private static final long serialVersionUID = 1L;
     private String function;
     private String arguments;
     private String batchSize = "100%";
