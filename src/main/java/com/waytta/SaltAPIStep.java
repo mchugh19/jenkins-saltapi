@@ -314,11 +314,7 @@ public class SaltAPIStep extends Step implements Serializable {
             Launcher launcher = getContext().get(Launcher.class);
 
             JSONArray returnArray = null;
-            if (jid != null && !jid.equals("")) {
-                returnArray = Builds.checkBlockingBuild(launcher, saltBuilder.getServername(), token, saltFunc, listener, saltBuilder.getJobPollTime(), saltBuilder.getMinionTimeout(), netapi, jid);
-            } else {
-                returnArray = saltBuilder.performRequest(launcher, run, token, saltBuilder.getServername(), saltFunc, listener, netapi);
-            }
+            returnArray = saltBuilder.performRequest(launcher, run, token, saltBuilder.getServername(), saltFunc, listener, netapi, jid);
             postRun(returnArray);
         }
 

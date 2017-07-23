@@ -258,7 +258,8 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep, Serializ
 
         JSONArray returnArray;
         try {
-            returnArray = performRequest(launcher, build, token, myservername, saltFunc, listener, netapi);
+            String jid = getJID(launcher, myservername, token, saltFunc, listener);
+            returnArray = performRequest(launcher, build, token, myservername, saltFunc, listener, netapi, jid);
         } catch (SaltException e) {
             throw new RuntimeException(e);
         }
@@ -311,13 +312,15 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep, Serializ
     }
 
     public String getJID(Launcher launcher, String serverName, String token, JSONObject saltFunc, TaskListener listener) throws IOException, InterruptedException, SaltException {
-        if (saltFunc.get("client").equals("local_async")) {
-            return Builds.getBlockingBuildJid(launcher, serverName, token, saltFunc, listener);
+        if (saltFunc.has("client")) {
+            if (((String) saltFunc.get("client")).contains("async")) {
+                return Builds.getBlockingBuildJid(launcher, serverName, token, saltFunc, listener);
+            }
         }
         return null;
     }
 
-    public JSONArray performRequest(Launcher launcher, Run build, String token, String serverName, JSONObject saltFunc, TaskListener listener, String netapi)
+    public JSONArray performRequest(Launcher launcher, Run build, String token, String serverName, JSONObject saltFunc, TaskListener listener, String netapi, String jid)
             throws InterruptedException, IOException, SaltException {
         JSONArray returnArray = new JSONArray();
         JSONObject httpResponse = new JSONObject();
@@ -335,7 +338,6 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep, Serializ
             int jobPollTime = getJobPollTime();
             int minionTimeout = getMinionTimeout();
             // poll /minion for response
-            String jid = getJID(launcher, serverName, token, saltFunc, listener);
             returnArray = Builds.checkBlockingBuild(launcher, serverName, token, saltFunc, listener, jobPollTime, minionTimeout, netapi, jid);
         } else {
             // Just send a salt request to /. Don't wait for reply
