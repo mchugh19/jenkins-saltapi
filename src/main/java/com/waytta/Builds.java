@@ -1,13 +1,14 @@
 package com.waytta;
 
-import hudson.model.Run;
-import hudson.model.TaskListener;
-
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import org.apache.commons.lang.StringUtils;
+
+import hudson.model.TaskListener;
 import hudson.Launcher;
-
 import net.sf.json.JSON;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONException;
@@ -17,18 +18,35 @@ import net.sf.json.JSONSerializer;
 public class Builds {
     public static void addArgumentsToSaltFunction(String myarguments, JSONObject saltFunc) {
         if (myarguments.length() > 0) {
-            JSONObject fullKwJSON = new JSONObject();
+            // Pattern match to detect anything between single and double quotes and drop it
+            // If anything is left that matches an equals sign, save
+            // This means a non-null regex match for group 1 is an equals sign outside of quotes
+            //   and thus a kwarg
+            String equalsPattern = "\\\\\"|\\\\'|\"(?:\\\\\"|[^\"])*\"|'(?:\\\\'|[^'])*'|(=)";
+            Pattern p = Pattern.compile(equalsPattern);
 
+            JSONObject fullKwJSON = new JSONObject();
             // spit on space separated not inside of single and double quotes
             String[] argItems = myarguments.split("\\s+(?=(?:[^'\"]|'[^']*'|\"[^\"]*\")*$)");
 
             for (String arg : argItems) {
                 // remove spaces at beginning or end
                 arg = arg.replaceAll("^\\s+|\\s+$", "");
+
+                // Look for any = not inside quotes
+                Boolean isKW = false;
+                Matcher m = p.matcher(arg);
+                while (m.find()) {
+                    if (StringUtils.isNotEmpty(m.group(1))) {
+                        // Found non-null match on group 1, assuming kwarg
+                        isKW = true;
+                    }
+                }
+
                 // if string wrapped in quotes, remove them since adding to list
                 // re-quotes
                 arg = arg.replaceAll("(^')|(^\")|('$)|(\"$)", "");
-                if (arg.contains("=")) {
+                if (isKW) {
                     String[] kwString = arg.split("=");
                     if (kwString.length > 2) {
                         // kwarg contained more than one =. Let's put the string

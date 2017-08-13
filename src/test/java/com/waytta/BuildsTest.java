@@ -1,6 +1,7 @@
 package com.waytta;
 
 import static org.junit.Assert.assertEquals;
+
 import org.junit.Test;
 
 import net.sf.json.JSONObject;
@@ -51,6 +52,29 @@ public class BuildsTest {
                 + "\"fun\":\"cmd.run\","
                 + "\"arg\":[\"thing\", \"thing2\", \"arg with space\"],"
                 + "\"kwarg\":{\"keyword\":\"value=thing\"},"
+                + "}");
+
+        assertEquals(expectedResult, saltFunc);
+    }
+
+    @Test
+    public void testArgEquals() {
+        String myarguments = "'export test=yep; echo $test'";
+
+        JSONObject saltFunc = new JSONObject();
+        saltFunc.put("client", "local");
+        saltFunc.put("tgt", "testTarget");
+        saltFunc.put("expr_form", "glob");
+        saltFunc.put("fun", "cmd.run");
+
+        Builds.addArgumentsToSaltFunction(myarguments, saltFunc);
+
+        JSONObject expectedResult = JSONObject.fromObject("{\"client\":\"local\","
+                + "\"tgt\":\"testTarget\","
+                + "\"expr_form\":\"glob\","
+                + "\"fun\":\"cmd.run\","
+                + "\"arg\":\"export test=yep; echo $test\","
+                + "\"kwarg\":{},"
                 + "}");
 
         assertEquals(expectedResult, saltFunc);
