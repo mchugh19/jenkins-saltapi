@@ -152,6 +152,9 @@ public class Builds {
         JSONArray returnArray = httpResponse.getJSONArray("return");
         for (Object o : returnArray) {
             JSONObject line = (JSONObject) o;
+            if (line.isEmpty() ) {
+                throw new SaltException("Missing JID: No minions matched target");
+            }
             jid = line.getString("jid");
         }
         // Print out success
