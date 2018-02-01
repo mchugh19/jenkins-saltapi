@@ -29,5 +29,9 @@
   <f:entry title="Save output to file" field="saveFile" description="Save Salt return into saltOutput.json file in workspace">
     <f:checkbox />
   </f:entry>
+  
+  <f:entry title="Skip validation of salt return" field="skipValidation" description="Do not check salt return for failures">
+    <f:checkbox />
+  </f:entry>
 
 </j:jelly>

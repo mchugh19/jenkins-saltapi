@@ -95,6 +95,7 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep, Serializ
     private boolean saveEnvVar = false;
     private final String credentialsId;
     private boolean saveFile = false;
+    private boolean skipValidation = false;
 
     @Deprecated
     private transient JSONObject clientInterfaces;
@@ -222,6 +223,15 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep, Serializ
     public String getTag() {
         return clientInterface.getTag();
     }
+    
+    @DataBoundSetter
+    public void setSkipValidation(boolean skipValidation) {
+        this.skipValidation = skipValidation;
+    }
+    
+    public boolean getSkipValidation() {
+        return skipValidation;
+    }
 
     @Override
     public void perform(Run<?, ?> build, FilePath workspace, Launcher launcher, TaskListener listener)
@@ -274,8 +284,13 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep, Serializ
             Utils.writeFile(returnArray.toString(), workspace);
         }
 
-        // Check for error and print out results
-        boolean validFunctionExecution = Utils.validateFunctionCall(returnArray);
+        boolean validFunctionExecution = true;
+        if (!skipValidation) {
+            // Check for error and print out results
+            validFunctionExecution = Utils.validateFunctionCall(returnArray);
+        } else {
+            LOGGER.log(Level.INFO, "Skipping validation of salt return");
+        }
 
         if (!validFunctionExecution) {
             listener.error("One or more minion did not return code 0\n");

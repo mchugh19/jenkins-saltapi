@@ -46,6 +46,7 @@ public class SaltAPIStep extends Step implements Serializable {
     private static String token = null;
     private static String netapi = null;
     private static JSONObject saltFunc = null;
+    private boolean skipValidation = false;
 
     @DataBoundConstructor
     public SaltAPIStep(String servername, String authtype, BasicClient clientInterface, String credentialsId) {
@@ -139,6 +140,15 @@ public class SaltAPIStep extends Step implements Serializable {
 
     public String getTag() {
         return clientInterface.getTag();
+    }
+    
+    @DataBoundSetter
+    public void setSkipValidation(boolean skipValidation) {
+        this.skipValidation = skipValidation;
+    }
+
+    public boolean getSkipValidation() {
+        return skipValidation;
     }
 
     @Override
@@ -330,8 +340,14 @@ public class SaltAPIStep extends Step implements Serializable {
 
             LOGGER.log(Level.FINE, "Received response: " + returnArray);
 
-            // Check for error and print out results
-            boolean validFunctionExecution = Utils.validateFunctionCall(returnArray);
+            boolean validFunctionExecution = true;
+            if (!skipValidation) {
+                // Check for error and print out results
+                validFunctionExecution = Utils.validateFunctionCall(returnArray);
+            } else {
+                LOGGER.log(Level.INFO, "Skipping validation of salt return");
+            }
+            
             if (!validFunctionExecution) {
                 listener.error("One or more minion did not return code 0\n");
                 Execution.this.getContext().onFailure(new SaltException(returnArray.toString()));
