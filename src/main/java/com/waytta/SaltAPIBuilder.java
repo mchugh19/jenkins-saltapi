@@ -385,7 +385,10 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep, Serializ
             listener.getLogger().println("Running in batch mode. Batch size: " + mybatch);
             break;
         case "runner":
-            saltFunc.put("mods", getMods());
+            String myMods = getMods();
+            if(myMods != null && !myMods.trim().isEmpty()) {
+                saltFunc.put("mods", myMods);
+            }
             String myPillarvalue = Utils.paramorize(build, listener, getPillarvalue());
             if (myPillarvalue.length() > 0) {
                 // If value was already a jsonobject, treat it as such
