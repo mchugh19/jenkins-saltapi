@@ -183,7 +183,6 @@ public class SaltAPIBuilderTest {
 
         JSONObject testObject = JSONObject.fromObject("{"
                 + "\"client\":\"runner\","
-                + "\"mods\":\"\","
                 + "\"pillar\":{\"key\":\"value\"},"
                 + "\"fun\":\"cmd.run\","
                 + "\"arg\":\"ls -la\","
