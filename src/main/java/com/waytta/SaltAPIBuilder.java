@@ -49,6 +49,7 @@ import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.Stapler;
+import org.kohsuke.stapler.interceptor.RequirePOST;
 
 import jenkins.model.Jenkins;
 import java.util.Collections;
@@ -467,11 +468,13 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep, Serializ
             return outputFormat;
         }
 
+        @RequirePOST
         public static FormValidation doTestConnection(
                 @QueryParameter String servername,
                 @QueryParameter String credentialsId,
                 @QueryParameter String authtype,
                 @AncestorInPath Item project) {
+            project.checkPermission(Item.CONFIGURE);
             StandardUsernamePasswordCredentials usedCredential = null;
             for (StandardUsernamePasswordCredentials c : CredentialsProvider.lookupCredentials(
                     StandardUsernamePasswordCredentials.class,
@@ -510,11 +513,14 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep, Serializ
 
             return FormValidation.warning("Cannot expand parametrized server name.");
         }
-
+        
+        @RequirePOST
         public static ListBoxModel doFillCredentialsIdItems(
                 @AncestorInPath Job context,
                 @QueryParameter String credentialsId,
-                @QueryParameter final String servername) {
+                @QueryParameter final String servername,
+                @AncestorInPath Item project) {
+            project.checkPermission(Item.CONFIGURE);
             Item item = Stapler.getCurrentRequest().findAncestorObject(Item.class);
             return new StandardUsernameListBoxModel()
                     .includeAs(
@@ -547,9 +553,11 @@ public class SaltAPIBuilder extends Builder implements SimpleBuildStep, Serializ
             return FormValidation.warning("Cannot expand parametrized server name.");
         }
 
+        @RequirePOST
         public static FormValidation doCheckCredentialsId(
                 @AncestorInPath Item project,
                 @QueryParameter String value) {
+            project.checkPermission(Item.CONFIGURE);
             if (project == null || !project.hasPermission(Item.CONFIGURE)) {
                 return FormValidation.ok();
             }
