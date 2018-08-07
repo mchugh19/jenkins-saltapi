@@ -1,10 +1,32 @@
+<?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
 
   <f:section title="SaltStack API">
-    <f:entry title="Poll Time" field="pollTime"
-      description="Number of seconds to wait before polling job completion status on jobs waiting for completion">
-      <f:number default="10" />
+      <f:entry title="SaltAPI version" description="Version of the SaltAPI in use">
+      <select name="apiVersion">
+        <f:option value="2017.7" selected="${instance.apiVersion == '2017.7'}">2017.7</f:option>
+        <f:option value="older" selected="${instance.apiVersion == 'older'}">older</f:option>
+      </select>
     </f:entry>
+
+    <f:entry title="Poll Time" field="pollTime"
+      description="Default number of seconds to wait before polling job completion status on jobs waiting for completion">
+      <f:textbox default="10" value="${instance.pollTime}" />
+    </f:entry>
+    
+    <f:entry title="Minion Timeout" field="minionTimeout"
+      description="Default number of seconds to wait before marking non-responding minions unresponsive and failing the build">
+      <f:textbox default="30" value="${instance.minionTimeout}" />
+    </f:entry>
+
+    <f:entry title="Display format" description="Configure display of SaltAPI response">
+      <select name="outputFormat">
+        <f:option value="json" selected="${instance.outputFormat == 'json'}">json</f:option>
+        <f:option value="yaml" selected="${instance.outputFormat == 'yaml'}">yaml</f:option>
+        <f:option value="none" selected="${instance.outputFormat == 'none'}">none</f:option>
+      </select>
+    </f:entry>
+
   </f:section>
 
 </j:jelly>

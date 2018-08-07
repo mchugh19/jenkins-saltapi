@@ -6,7 +6,7 @@
   </f:entry>
 
   <f:entry title="Credentials" field="credentialsId">
-    <c:select checkMethod="post" />
+    <c:select checkMethod="post"/>
   </f:entry>
 
   <f:entry title="Auth Type" field="authtype">
@@ -19,16 +19,12 @@
   </f:entry>
   <f:validateButton
    title="${%Test Connection}" progress="${%Testing...}"
-   method="testConnection" with="servername,credentialsId,authtype"
+   method="testConnection" with="servername,credentialsId,authtype" 
    checkMethod="post" />
 
   <f:dropdownDescriptorSelector title="Client Interface" field="clientInterface"
     descriptors="${descriptor.clientDescriptors}" />
-
-  <f:entry title="Save output to environment variable" field="saveEnvVar" description="Save Salt return into environment variable SALTBUILDOUTPUT">
-    <f:checkbox />
-  </f:entry>
-  
+    
   <f:entry title="Save output to file" field="saveFile" description="Save Salt return into saltOutput.json file in workspace">
     <f:checkbox />
   </f:entry>
@@ -36,5 +32,4 @@
   <f:entry title="Skip validation of salt return" field="skipValidation" description="Do not check salt return for failures">
     <f:checkbox />
   </f:entry>
-
 </j:jelly>
